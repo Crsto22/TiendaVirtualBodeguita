@@ -5,6 +5,20 @@
   --color-primary: #44943b;
   --color-secondary: #fca210;
   --color-darkblue: #053a4d;
+  
+  /* Fuentes personalizadas */
+  --font-family-heading: var(--font-poppins), sans-serif;
+  --font-family-body: var(--font-inter), sans-serif;
+}
+
+/* Aplicar fuentes a elementos específicos */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 600;
+}
+
+body {
+  font-family: var(--font-inter), sans-serif;
 }
 
 

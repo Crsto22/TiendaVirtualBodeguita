@@ -5,10 +5,12 @@ import Image from "next/image";
 import { ShoppingCart, Search, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import SearchModal from "@/components/search-modal";
 
 export function Navbar() {
   const [cartTotal, setCartTotal] = useState(0);
   const [cartItems, setCartItems] = useState(0);
+  const [openSearch, setOpenSearch] = useState(false);
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -53,6 +55,7 @@ export function Navbar() {
               variant="ghost"
               size="icon"
               className="hidden md:block text-darkblue hover:text-primary  rounded-full"
+              onClick={() => setOpenSearch(true)}
             >
               <Search className="size-6!" />
             </Button>
@@ -81,6 +84,7 @@ export function Navbar() {
           </div>
         </div>
       </div>
+      <SearchModal open={openSearch} onClose={() => setOpenSearch(false)} />
     </nav>
   );
 }
