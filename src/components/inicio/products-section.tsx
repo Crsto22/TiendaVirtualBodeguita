@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
-import { useRef, useEffect, useState } from "react";
+import { useRef } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { getProductsClient } from "@/lib/api";
 import { Category } from "@/types/product";
@@ -146,36 +147,29 @@ function CategoryCarousel({ category }: { category: Category }) {
   );
 }
 
+// Fetcher function para SWR
+const fetcher = async () => {
+  const response = await getProductsClient();
+  // Filtrar categorías que tienen productos y tomar solo las primeras 5
+  return response.data
+    .filter(category => category.productos && category.productos.length > 0)
+    .slice(0, 5);
+};
+
 export function ProductsSection() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        setLoading(true);
-        const response = await getProductsClient();
-        
-        // Filtrar categorías que tienen productos y tomar solo las primeras 5
-        const categoriesWithProducts = response.data
-          .filter(category => category.productos && category.productos.length > 0)
-          .slice(0, 5);
-        
-        setCategories(categoriesWithProducts);
-        setError(null);
-      } catch (err) {
-        console.error('Error al cargar productos:', err);
-        setError('Error al cargar los productos');
-      } finally {
-        setLoading(false);
-      }
+  // SWR con cache automático
+  const { data: categories, error, isLoading } = useSWR<Category[]>(
+    'home-products', // Key única para este dato
+    fetcher,
+    {
+      revalidateOnFocus: false, // No revalidar al cambiar de tab
+      revalidateOnReconnect: true, // Revalidar al reconectar internet
+      dedupingInterval: 60000, // Deduplicar requests por 1 minuto
     }
+  );
 
-    fetchProducts();
-  }, []);
-
-  if (loading) {
+  // Skeleton loader solo en la primera carga (cuando no hay data en cache)
+  if (isLoading && !categories) {
     return (
       <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -218,7 +212,7 @@ export function ProductsSection() {
     <section className="py-8 bg-gray-50">
       <div className="container mx-auto px-4">
         {/* Render each category with its carousel */}
-        {categories.map((category) => (
+        {categories?.map((category) => (
           <CategoryCarousel key={category.categoria_id} category={category} />
         ))}
 

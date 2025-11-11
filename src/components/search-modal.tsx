@@ -32,11 +32,11 @@ function capitalizeText(text: string): string {
 export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
-  // Función de búsqueda con debounce
+  // Función de búsqueda
   const performSearch = useCallback(async (searchQuery: string) => {
     const trimmedQuery = searchQuery.trim();
     
@@ -45,6 +45,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setResults([]);
       setTotalResults(0);
       setError(null);
+      setIsTyping(false);
       return;
     }
 
@@ -53,10 +54,11 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setResults([]);
       setTotalResults(0);
       setError(null);
+      setIsTyping(false);
       return;
     }
 
-    setLoading(true);
+    // Mantener isTyping true durante la búsqueda
     setError(null);
 
     try {
@@ -76,7 +78,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setResults([]);
       setTotalResults(0);
     } finally {
-      setLoading(false);
+      // Solo quitar el skeleton cuando tengamos la respuesta
+      setIsTyping(false);
     }
   }, []);
 
@@ -84,8 +87,22 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   useEffect(() => {
     if (!open) return;
 
+    // Marcar que el usuario está escribiendo solo si hay suficientes caracteres
+    if (query.trim().length >= 3) {
+      setIsTyping(true);
+    } else {
+      setIsTyping(false);
+      // Limpiar resultados si hay menos de 3 caracteres
+      setResults([]);
+      setTotalResults(0);
+      setError(null);
+    }
+
     const debounceTimer = setTimeout(() => {
-      performSearch(query);
+      // Solo ejecutar búsqueda si hay 3+ caracteres
+      if (query.trim().length >= 3) {
+        performSearch(query);
+      }
     }, 300); // 300ms de debounce
 
     return () => clearTimeout(debounceTimer);
@@ -98,7 +115,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setResults([]);
       setTotalResults(0);
       setError(null);
-      setLoading(false);
+      setIsTyping(false);
     }
   }, [open]);
 
@@ -127,11 +144,29 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
         </div>
 
         <div className="overflow-auto max-h-[calc(90vh-160px)] sm:max-h-[calc(85vh-180px)]">
-          {loading ? (
-            <div className="p-8 sm:p-12 text-center">
-              <Loader2 className="size-10 sm:size-12 text-primary mx-auto mb-3 sm:mb-4 animate-spin" />
-              <p className="text-gray-600 font-medium text-sm sm:text-base">Buscando productos...</p>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1">Esto solo tomará un momento</p>
+          {isTyping ? (
+            // Skeleton loader mientras el usuario escribe y busca
+            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-xl border-2 border-gray-100 p-3 sm:p-4 flex gap-3 sm:gap-4 items-center animate-pulse"
+                >
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-200 shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="h-5 w-16 bg-gray-200 rounded-full"></div>
+                      <div className="h-5 w-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  </div>
+                </div>
+              ))}
+              <p className="text-center text-xs sm:text-sm text-gray-500 py-2 flex items-center justify-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                Buscando resultados...
+              </p>
             </div>
           ) : error ? (
             <div className="p-8 sm:p-12 text-center">

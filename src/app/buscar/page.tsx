@@ -183,7 +183,7 @@ export default function BuscarPage() {
       <MobileDock />
 
       {/* Search Header */}
-      <section className="bg-white sticky top-16 md:top-0 z-40 shadow-sm">
+      <section className="bg-white sticky top-14 md:top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="relative">
             <div className="relative flex items-center">

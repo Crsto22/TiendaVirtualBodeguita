@@ -4,42 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef } from "react";
-
-interface Category {
-  name: string;
-  image: string;
-  color: string;
-  href: string;
-}
-
-const categories: Category[] = [
-  { name: "Snacks y cereales", image: "/Categorias/SnacksYCereales.png", color: "bg-[#8B7355]", href: "/categorias" },
-  { name: "Abarrotes", image: "/Categorias/Abarrotes.png", color: "bg-[#6B6B6B]", href: "/categorias" },
-  { name: "Bebidas", image: "/Categorias/Bebidas.png", color: "bg-[#4A7C8C]", href: "/categorias" },
-  { name: "Galletas", image: "/Categorias/Galletas.png", color: "bg-[#A89968]", href: "/categorias" },
-  { name: "GAS", image: "/Categorias/Gas.png", color: "bg-[#6B7C8C]", href: "/categorias" },
-  { name: "Chocolates y dulces", image: "/Categorias/ChocolatesyDulces.png", color: "bg-[#7B6B5A]", href: "/categorias" },
-  { name: "Grasas y Aceites", image: "/Categorias/GrasasYAceites.png", color: "bg-[#8B8B6B]", href: "/categorias" },
-  { name: "Panadería", image: "/Categorias/Panaderia.png", color: "bg-[#B8956A]", href: "/categorias" },
-  { name: "Carnes", image: "/Categorias/Carnes.png", color: "bg-[#A85A5A]", href: "/categorias" },
-  { name: "Frutas", image: "/Categorias/Frutas.png", color: "bg-[#8BAA5A]", href: "/categorias" },
-  { name: "Verduras", image: "/Categorias/Verduras.png", color: "bg-[#6B9B5A]", href: "/categorias" },
-  { name: "Lácteos y Huevos", image: "/Categorias/LacteosYHuevos.png", color: "bg-[#7BA8C8]", href: "/categorias" },
-  { name: "Alimentos Para Animales", image: "/Categorias/AlimentosParaAnimales.png", color: "bg-[#9B7B5A]", href: "/categorias" },
-  { name: "Bebidas Alcohólicas", image: "/Categorias/BebidasAlcoholicas.png", color: "bg-[#8B5A5A]", href: "/categorias" },
-  { name: "Bebidas Gaseosas", image: "/Categorias/BebidasGaseosas.png", color: "bg-[#5A8BAA]", href: "/categorias" },
-  { name: "Bebidas y Alimentos Instantáneos", image: "/Categorias/BebidasAlimentosInstantaneas.png", color: "bg-[#AA8B5A]", href: "/categorias" },
-  { name: "Café e Infusiones", image: "/Categorias/CafeEInfusiones.png", color: "bg-[#6B5A4A]", href: "/categorias" },
-  { name: "Condimentos y Esencias", image: "/Categorias/CondimentosYEsencias.png", color: "bg-[#7B8B5A]", href: "/categorias" },
-  { name: "Cuidado Personal", image: "/Categorias/CuidadoPersonal.png", color: "bg-[#8B7BA8]", href: "/categorias" },
-  { name: "Embutidos", image: "/Categorias/Embutidos.png", color: "bg-[#A8685A]", href: "/categorias" },
-  { name: "Enlatados", image: "/Categorias/Enlatados.png", color: "bg-[#8B8B8B]", href: "/categorias" },
-  { name: "Fideos", image: "/Categorias/Fideos.png", color: "bg-[#C8AA7B]", href: "/categorias" },
-  { name: "Harinas", image: "/Categorias/Harinas.png", color: "bg-[#D8C8AA]", href: "/categorias" },
-  { name: "Licorería", image: "/Categorias/Licoreria.png", color: "bg-[#9B6B5A]", href: "/categorias" },
-  { name: "Productos de Limpieza", image: "/Categorias/ProductosDeLimpieza.png", color: "bg-[#5A9BAA]", href: "/categorias" },
-  { name: "Útiles Escolares", image: "/Categorias/UtilesEscolares.png", color: "bg-[#7B9BAA]", href: "/categorias" },
-];
+import { categories } from "@/data/categories";
 
 export function CategoriesSection() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);

@@ -6,11 +6,13 @@ import { ShoppingCart, Search, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import SearchModal from "@/components/search-modal";
+import CartSidebar from "@/components/cart-sidebar";
 
 export function Navbar() {
-  const [cartTotal, setCartTotal] = useState(0);
-  const [cartItems, setCartItems] = useState(0);
+  const [cartTotal, setCartTotal] = useState(16.8); // TODO: Conectar con estado global
+  const [cartItems, setCartItems] = useState(3); // TODO: Conectar con estado global
   const [openSearch, setOpenSearch] = useState(false);
+  const [openCart, setOpenCart] = useState(false);
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -71,6 +73,7 @@ export function Navbar() {
 
             {/* Cart Button */}
             <Button
+              onClick={() => setOpenCart(true)}
               className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2 relative"
             >
               <ShoppingCart className="size-6!"  />
@@ -85,6 +88,7 @@ export function Navbar() {
         </div>
       </div>
       <SearchModal open={openSearch} onClose={() => setOpenSearch(false)} />
+      <CartSidebar open={openCart} onClose={() => setOpenCart(false)} />
     </nav>
   );
 }
