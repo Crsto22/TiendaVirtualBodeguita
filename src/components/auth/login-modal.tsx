@@ -36,6 +36,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 width={150}
                 height={150}
                 className="object-contain"
+                priority
             />
             <div className="text-center space-y-2 -mt-5">
                 <p className="text-gray-600">
@@ -92,7 +93,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent side="bottom" className="rounded-t-[20px] px-4 pt-6 pb-8 bg-white">
+            <SheetContent side="bottom" className="rounded-t-[20px] px-4 pt-6 pb-8 bg-white data-[state=open]:duration-300 data-[state=closed]:duration-200 will-change-transform">
                 <SheetHeader className="mb-4">
                     <SheetTitle className="text-xl font-bold text-center text-darkblue">
                         Bienvenido

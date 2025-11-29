@@ -38,7 +38,7 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col border-none bg-white">
+      <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col border-none bg-white data-[state=open]:duration-300 data-[state=closed]:duration-200 will-change-transform">
         <SheetHeader className="px-3 sm:px-4 md:px-6 pt-4 sm:pt-5 md:pt-6 pb-3 sm:pb-4 border-b border-gray-200">
           <SheetTitle className="text-lg sm:text-xl md:text-2xl font-bold text-darkblue flex items-center gap-2">
             <ShoppingCart className="size-5 sm:size-6 text-primary" />
