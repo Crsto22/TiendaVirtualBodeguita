@@ -4,7 +4,7 @@ export interface Product {
   producto_web: string;
   tipo_unidad: string;
   stock: number;
-  precio: number;
+  precio: number | null;
   has_precio_alternativo: boolean;
   precio_alternativo?: number;
   motivo_precio_alternativo?: string;
@@ -15,6 +15,8 @@ export interface Product {
   estado: string;
   retornable: boolean;
   categoria_nombre?: string; // Incluido en resultados de búsqueda
+  mostrar_precio_web?: boolean;
+  tipo_producto_kg?: 'granel' | 'pieza' | 'peso_fijo';
 }
 
 export interface Category {
@@ -35,4 +37,48 @@ export interface SearchResponse {
   query: string;
   total: number;
   data: Product[];
+}
+
+export interface ProductDetailResponse {
+  success: boolean;
+  producto: Product;
+  productos_relacionados: {
+    total: number;
+    data: Product[];
+  };
+}
+
+// Interface para items en el carrito (extiende Product + cantidad)
+export interface CartItem extends Product {
+  cantidad: number;
+}
+
+// Paginación
+export interface Pagination {
+  pagina_actual: number;
+  total_paginas: number;
+  productos_por_pagina: number;
+  total_productos: number;
+  tiene_siguiente: boolean;
+  tiene_anterior: boolean;
+}
+
+// Respuesta de productos con paginación (para /productos y /categoria)
+export interface PaginatedProductsResponse {
+  success: boolean;
+  paginacion: Pagination;
+  productos: Product[];
+}
+
+// Respuesta de productos por categoría
+export interface CategoryProductsResponse {
+  success: boolean;
+  categoria: {
+    id: string;
+    nombre: string;
+    color: string;
+    descripcion: string;
+  };
+  paginacion: Pagination;
+  productos: Product[];
 }

@@ -46,28 +46,33 @@ export function CategoriesSection() {
             ref={scrollContainerRef}
             className="flex gap-3 md:gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth  md:px-10"
           >
-            {categories.map((category, index) => (
-              <Link
-                key={index}
-                href={category.href}
-                className="flex flex-col items-center group shrink-0"
-              >
-                <div
-                  className={`${category.color} w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-full flex items-center justify-center mb-2  shadow-md overflow-hidden`}
+            {categories.map((category, index) => {
+              // Convertir nombre de categoría a slug URL-friendly
+              const categorySlug = category.name.toLowerCase().replace(/\s+/g, '-');
+              
+              return (
+                <Link
+                  key={index}
+                  href={`/coleccion/${encodeURIComponent(categorySlug)}`}
+                  className="flex flex-col items-center group shrink-0"
                 >
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    width={200}
-                    height={200}
-                    className="object-contain hover:scale-110 transition-transform hover:duration-300"
-                  />
-                </div>
-                <p className="text-xs md:text-sm text-center text-darkblue font-medium group-hover:text-primary transition-colors w-24 md:w-28 lg:w-32">
-                  {category.name}
-                </p>
-              </Link>
-            ))}
+                  <div
+                    className={`${category.color} w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-full flex items-center justify-center mb-2  shadow-md overflow-hidden`}
+                  >
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      width={200}
+                      height={200}
+                      className="object-contain hover:scale-110 transition-transform hover:duration-300"
+                    />
+                  </div>
+                  <p className="text-xs md:text-sm text-center text-darkblue font-medium group-hover:text-primary transition-colors w-24 md:w-28 lg:w-32">
+                    {category.name}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
 
           {/* Next Button */}

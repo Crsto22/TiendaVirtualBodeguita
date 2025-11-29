@@ -248,9 +248,11 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                       </h3>
                       
                       <div className="flex items-baseline gap-2">
-                        <span className="text-base sm:text-lg font-bold text-primary">
-                          S/ {p.precio.toFixed(2)}
-                        </span>
+                        {p.mostrar_precio_web !== false && (
+                          <span className="text-base sm:text-lg font-bold text-primary">
+                            S/ {(p.precio || 0).toFixed(2)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </Link>

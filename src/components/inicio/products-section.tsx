@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
-import { useRef } from "react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Trash2, Minus, Plus } from "lucide-react";
+import { useRef, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { getProductsClient } from "@/lib/api";
-import { Category } from "@/types/product";
+import { Category, Product } from "@/types/product";
+import { useCartStore } from "@/store/cart-store";
+import { ProductWeightSelector } from "@/components/product-weight-selector";
 
 // Función para capitalizar texto (primera letra mayúscula, resto minúscula)
 function capitalizeText(text: string): string {
@@ -21,6 +23,7 @@ function capitalizeText(text: string): string {
 // Componente individual para el carrusel de cada categoría
 function CategoryCarousel({ category }: { category: Category }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
   const scroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
@@ -37,9 +40,23 @@ function CategoryCarousel({ category }: { category: Category }) {
     }
   };
 
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const handleProductClick = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault();
+    if (product.tipo_unidad === 'kilogramo') {
+      setSelectedProduct(product);
+    } else {
+      addItem(product);
+    }
+  };
+
   if (!category.productos || category.productos.length === 0) {
     return null;
   }
+
+  // Generar slug de la categoría para la URL
+  const categorySlug = category.categoria_nombre.toLowerCase().replace(/\s+/g, '-');
 
   return (
     <div className="mb-8">
@@ -47,7 +64,7 @@ function CategoryCarousel({ category }: { category: Category }) {
         <h3 className="text-xl md:text-2xl font-bold text-darkblue">
           {category.categoria_nombre}
         </h3>
-        <Link href={`/categorias/${category.categoria_id}`}>
+        <Link href={`/coleccion/${encodeURIComponent(categorySlug)}`}>
           <Button variant="ghost" className="text-primary hover:text-primary/80 text-sm">
             Ver más →
           </Button>
@@ -83,6 +100,7 @@ function CategoryCarousel({ category }: { category: Category }) {
                       src={product.imagen}
                       alt={product.nombre}
                       fill
+                      sizes="(max-width: 640px) 150px, (max-width: 768px) 160px, (max-width: 1024px) 200px, 220px"
                       className=""
                     />
                   ) : (
@@ -98,35 +116,98 @@ function CategoryCarousel({ category }: { category: Category }) {
                   <h3 className="text-xs sm:text-sm md:text-base font-semibold text-darkblue mb-1 line-clamp-2 group-hover:text-primary transition-colors">
                     {capitalizeText(product.nombre)}
                   </h3>
-                  
+
                   {/* Unit Type */}
                   <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2">
                     {product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
                   </p>
 
                   {/* Price and Cart Container */}
-                  <div className="mt-auto flex items-center justify-between gap-1">
+                  <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-1">
+                    {/* Precio */}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-base sm:text-lg md:text-xl font-bold text-primary truncate">
-                        S/ {product.precio.toFixed(2)}
-                      </span>
-                      {product.has_precio_alternativo && product.precio_alternativo && (
-                        <span className="text-[10px] sm:text-xs text-gray-500 truncate">
-                          {product.motivo_precio_alternativo}: S/ {product.precio_alternativo.toFixed(2)}
-                        </span>
+                      {product.mostrar_precio_web !== false && (
+                        <>
+                          <span className="text-base sm:text-lg md:text-xl font-bold text-primary truncate">
+                            S/ {(product.precio || 0).toFixed(2)}
+                          </span>
+                          {product.has_precio_alternativo && product.precio_alternativo && (
+                            <span className="text-[10px] sm:text-xs text-gray-500 truncate">
+                              {product.motivo_precio_alternativo}: S/ {product.precio_alternativo.toFixed(2)}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // Lógica para agregar al carrito
-                      }}
-                      className="bg-primary text-white p-1.5 sm:p-2 rounded-full shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                      aria-label="Agregar al carrito"
-                      disabled={product.stock === 0}
-                    >
-                      <ShoppingCart className="size-3.5 sm:size-4 md:size-5" />
-                    </button>
+
+                    {/* Botón de carrito o controles */}
+                    <div className="flex justify-center md:justify-end">
+                      {(() => {
+                        const cartItem = items.find(item => item.id === product.id);
+                        const quantityInCart = items.reduce((acc, item) => {
+                          if (item.id === product.id || item.id.startsWith(`${product.id}-`)) {
+                            return acc + item.cantidad;
+                          }
+                          return acc;
+                        }, 0);
+
+                        if (cartItem && product.tipo_unidad !== 'kilogramo') {
+                          return (
+                            <div className="flex items-center gap-5 sm:gap-1 bg-white border-2 border-gray-200 rounded-full px-1 py-1 shadow-sm">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (cartItem.cantidad === 1) {
+                                    removeItem(product.id);
+                                  } else {
+                                    updateQuantity(product.id, cartItem.cantidad - 1);
+                                  }
+                                }}
+                                className="bg-red-500 text-white size-6 sm:size-7 rounded-full hover:bg-red-600 transition-colors flex items-center justify-center"
+                              >
+                                {cartItem.cantidad === 1 ? (
+                                  <Trash2 className="size-3 sm:size-3.5" />
+                                ) : (
+                                  <Minus className="size-3 sm:size-3.5" />
+                                )}
+                              </button>
+                              <span className="text-sm sm:text-base font-bold text-darkblue px-2 min-w-6 text-center">
+                                {cartItem.cantidad}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (cartItem.cantidad < product.stock) {
+                                    updateQuantity(product.id, cartItem.cantidad + 1);
+                                  }
+                                }}
+                                className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center"
+                                disabled={cartItem.cantidad >= product.stock}
+                              >
+                                <Plus className="size-3 sm:size-3.5" />
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <button
+                            onClick={(e) => handleProductClick(e, product)}
+                            className="bg-primary text-white px-3 py-2.5 sm:p-2 rounded-full sm:rounded-full shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 inline-flex items-center gap-1.5 sm:gap-0 relative"
+                            aria-label="Agregar al carrito"
+                            disabled={product.stock === 0}
+                          >
+                            <ShoppingCart className="size-3.5 sm:size-4 md:size-5" />
+                            <span className="text-xs font-semibold sm:hidden">Agregar</span>
+                            {quantityInCart > 0 && (
+                              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold size-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                                {quantityInCart}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -143,6 +224,14 @@ function CategoryCarousel({ category }: { category: Category }) {
           <ChevronRight className="size-5 md:size-6" />
         </button>
       </div>
+
+      {selectedProduct && (
+        <ProductWeightSelector
+          product={selectedProduct}
+          isOpen={!!selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </div>
   );
 }
@@ -218,7 +307,7 @@ export function ProductsSection() {
 
         {/* Mobile View All Button */}
         <div className="mt-6 md:hidden flex justify-center">
-          <Link href="/categorias">
+          <Link href="/coleccion/todas">
             <Button className="bg-primary hover:bg-primary/90 text-white w-full">
               Ver todas las categorías
             </Button>

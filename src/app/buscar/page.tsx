@@ -275,7 +275,7 @@ export default function BuscarPage() {
           <section>
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
               <h2 className="text-base sm:text-lg font-bold text-darkblue">
-                Resultados: <span className="text-primary">"{searchQuery}"</span>
+                Resultados: <span className="text-white">"{searchQuery}"</span>
               </h2>
               {totalResults > 0 && (
                 <Badge variant="secondary" className="text-xs sm:text-sm px-2 sm:px-3 py-1">
@@ -367,11 +367,11 @@ export default function BuscarPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         {product.categoria_nombre && (
-                          <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 border-primary/30 text-primary max-w-[120px] truncate">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 border-primary/30 text-primary max-w-[120px] truncate ">
                             {product.categoria_nombre}
                           </Badge>
                         )}
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0">
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 text-white">
                           {product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
                         </Badge>
                       </div>
@@ -381,13 +381,17 @@ export default function BuscarPage() {
                       </h3>
                       
                       <div className="flex items-baseline gap-2">
-                        <span className="text-base sm:text-lg font-bold text-primary">
-                          S/ {product.precio.toFixed(2)}
-                        </span>
-                        {product.has_precio_alternativo && product.precio_alternativo && (
-                          <span className="text-[10px] sm:text-xs text-gray-500">
-                            {product.motivo_precio_alternativo}: S/ {product.precio_alternativo.toFixed(2)}
-                          </span>
+                        {product.mostrar_precio_web !== false && (
+                          <>
+                            <span className="text-base sm:text-lg font-bold text-primary">
+                              S/ {(product.precio || 0).toFixed(2)}
+                            </span>
+                            {product.has_precio_alternativo && product.precio_alternativo && (
+                              <span className="text-[10px] sm:text-xs text-gray-500">
+                                {product.motivo_precio_alternativo}: S/ {product.precio_alternativo.toFixed(2)}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
