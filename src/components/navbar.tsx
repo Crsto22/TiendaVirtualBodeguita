@@ -134,7 +134,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-darkblue cursor-pointer rounded-full rounded-full bg-secondary text-white"
+              className=" cursor-pointer rounded-full rounded-full bg-darkblue text-white"
               onClick={() => setIsLoginOpen(true)}
             >
               <User className="size-6!" />
