@@ -10,17 +10,20 @@ import CartSidebar from "@/components/cart-sidebar";
 import { useCartStore } from "@/store/cart-store";
 import { categories } from "@/data/categories";
 
+import { LoginModal } from "@/components/auth/login-modal";
+
 export function Navbar() {
   // Zustand store - Obtener items directamente para forzar re-render
   const items = useCartStore(state => state.items);
   const isOpen = useCartStore(state => state.isOpen);
   const openCart = useCartStore(state => state.openCart);
   const closeCart = useCartStore(state => state.closeCart);
-  
+
   // Calcular totales desde los items
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
-  
+
   const [openSearch, setOpenSearch] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
@@ -50,7 +53,7 @@ export function Navbar() {
             </Link>
 
             {/* Categorías Dropdown - Desktop */}
-            <div 
+            <div
               className="relative"
               onMouseEnter={() => setDropdownOpen(true)}
               onMouseLeave={() => setDropdownOpen(false)}
@@ -68,47 +71,47 @@ export function Navbar() {
                 <div className="absolute left-0 top-full pt-2 w-[800px] z-50">
                   <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-100 p-6 animate-in fade-in slide-in-from-top-2 duration-200">
                     <h3 className="text-lg font-bold text-darkblue mb-4 px-2">
-                    Todas las Categorías
-                  </h3>
-                  
-                  {/* Grid de categorías */}
-                  <div className="grid grid-cols-4 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar">
-                    {categories.map((category, index) => (
+                      Todas las Categorías
+                    </h3>
+
+                    {/* Grid de categorías */}
+                    <div className="grid grid-cols-4 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar">
+                      {categories.map((category, index) => (
+                        <Link
+                          key={index}
+                          href={`/coleccion/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, '-'))}`}
+                          className="group flex flex-col items-center p-3 rounded-xl hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 transition-all duration-200 border-2 border-transparent hover:border-primary/20"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          {/* Imagen de categoría */}
+                          <div className="w-16 h-16 rounded-full overflow-hidden mb-2 ring-2 ring-gray-200 group-hover:ring-primary transition-all duration-200 flex items-center justify-center bg-gray-50">
+                            <Image
+                              src={category.image}
+                              alt={category.name}
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+
+                          {/* Nombre */}
+                          <p className="text-xs font-semibold text-center text-darkblue group-hover:text-primary transition-colors line-clamp-2 h-8">
+                            {category.name}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+
+                    {/* Footer del dropdown */}
+                    <div className="mt-4 pt-4 border-t border-gray-200 text-center">
                       <Link
-                        key={index}
-                        href={`/coleccion/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, '-'))}`}
-                        className="group flex flex-col items-center p-3 rounded-xl hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 transition-all duration-200 border-2 border-transparent hover:border-primary/20"
+                        href="/coleccion/todas"
+                        className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        {/* Imagen de categoría */}
-                        <div className="w-16 h-16 rounded-full overflow-hidden mb-2 ring-2 ring-gray-200 group-hover:ring-primary transition-all duration-200 flex items-center justify-center bg-gray-50">
-                          <Image
-                            src={category.image}
-                            alt={category.name}
-                            width={64}
-                            height={64}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        
-                        {/* Nombre */}
-                        <p className="text-xs font-semibold text-center text-darkblue group-hover:text-primary transition-colors line-clamp-2 h-8">
-                          {category.name}
-                        </p>
+                        Ver todos los productos →
                       </Link>
-                    ))}
-                  </div>
-
-                  {/* Footer del dropdown */}
-                  <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                    <Link
-                      href="/coleccion/todas"
-                      className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Ver todos los productos →
-                    </Link>
-                  </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -127,13 +130,14 @@ export function Navbar() {
               <Search className="size-6!" />
             </Button>
 
-            {/* User Icon - Desktop only */}
+            {/* User Icon */}
             <Button
               variant="ghost"
               size="icon"
-              className="hidden md:block text-darkblue hover:text-primary  rounded-full"
+              className="text-darkblue cursor-pointer rounded-full rounded-full bg-secondary text-white"
+              onClick={() => setIsLoginOpen(true)}
             >
-              <User className="size-6!"   />
+              <User className="size-6!" />
             </Button>
 
             {/* Cart Button */}
@@ -141,7 +145,7 @@ export function Navbar() {
               onClick={openCart}
               className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2 relative"
             >
-              <ShoppingCart className="size-6!"  />
+              <ShoppingCart className="size-6!" />
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                   {totalItems}
@@ -152,6 +156,7 @@ export function Navbar() {
         </div>
       </div>
       <SearchModal open={openSearch} onClose={() => setOpenSearch(false)} />
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
       <CartSidebar open={isOpen} onClose={closeCart} />
     </nav>
   );
