@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Search, User, ChevronDown, LogOut, Settings } from "lucide-react";
+import { ShoppingCart, Search, User, ChevronDown, LogOut, Settings, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import SearchModal from "@/components/search-modal";
@@ -210,6 +210,15 @@ export function Navbar() {
                         <p className="text-xs text-gray-500">Conectado como</p>
                         <p className="text-sm font-bold text-darkblue truncate">{user.nombre}</p>
                       </div>
+
+                      <Link
+                        href="/pedidos"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <Package className="size-4" />
+                        Pedidos
+                      </Link>
 
                       <Link
                         href="/perfil"
