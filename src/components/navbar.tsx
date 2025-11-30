@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Search, User, ChevronDown } from "lucide-react";
+import { ShoppingCart, Search, User, ChevronDown, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import SearchModal from "@/components/search-modal";
 import CartSidebar from "@/components/cart-sidebar";
+
 import { useCartStore } from "@/store/cart-store";
 import { categories } from "@/data/categories";
+import { useAuth } from "@/context/AuthContext";
 
 import { LoginModal } from "@/components/auth/login-modal";
+import { LogoutModal } from "@/components/auth/logout-modal";
 
 export function Navbar() {
   // Zustand store - Obtener items directamente para forzar re-render
@@ -24,21 +27,61 @@ export function Navbar() {
 
   const [openSearch, setOpenSearch] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+
+  const { user, logout } = useAuth();
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Mobile: Menu Icon */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-darkblue hover:text-primary hover:bg-gray-100"
-          >
-            <ChevronDown className="h-6 w-6" />
-          </Button>
 
+          {user ? (
+            <div className="md:hidden flex items-center gap-2 border border-gray-200 rounded-full p-1">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+                {user.foto_url ? (
+                  <Image
+                    src={user.foto_url}
+                    alt={user.nombre || "Usuario"}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    {user.nombre?.charAt(0) || "U"}
+                  </div>
+                )}
+              </div>
+              <Link
+                href="/perfil"
+                className="flex items-center justify-center text-darkblue hover:text-primary h-8 w-8"
+              >
+                <Settings className="size-5" />
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                onClick={() => setIsLogoutOpen(true)}
+              >
+                <LogOut className="size-5" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className=" md:hidden  cursor-pointer text-darkblue hover:text-primary border border-gray-200 border-2 rounded-full"
+              onClick={() => setIsLoginOpen(true)
+              }
+            >
+              <User className="size-6!" />
+            </Button >
+          )}
           {/* Logo y Categorías - Desktop */}
           <div className="hidden md:flex items-center gap-4">
             <Link href="/inicio" className="shrink-0 hover:opacity-90 transition-opacity">
@@ -131,14 +174,76 @@ export function Navbar() {
             </Button>
 
             {/* User Icon */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className=" cursor-pointer rounded-full rounded-full bg-darkblue text-white"
-              onClick={() => setIsLoginOpen(true)}
-            >
-              <User className="size-6!" />
-            </Button>
+            {/* User Section - Desktop */}
+            {user ? (
+              <div
+                className="relative hidden md:block"
+                onMouseEnter={() => setUserDropdownOpen(true)}
+                onMouseLeave={() => setUserDropdownOpen(false)}
+              >
+                <button className="flex items-center gap-2 hover:bg-gray-50 rounded-full pl-1 pr-3 py-1 transition-colors border border-gray-200 hover:border-gray-400">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+                    {user.foto_url ? (
+                      <Image
+                        src={user.foto_url}
+                        alt={user.nombre || "Usuario"}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {user.nombre?.charAt(0) || "U"}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-darkblue max-w-[100px] truncate">
+                    {user.nombre?.split(' ')[0]}
+                  </span>
+                  <ChevronDown className={`size-4 text-gray-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* User Dropdown */}
+                {userDropdownOpen && (
+                  <div className="absolute right-0 top-full pt-2 w-48 z-50">
+                    <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-3 py-2 border-b border-gray-100 mb-1">
+                        <p className="text-xs text-gray-500">Conectado como</p>
+                        <p className="text-sm font-bold text-darkblue truncate">{user.nombre}</p>
+                      </div>
+
+                      <Link
+                        href="/perfil"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <Settings className="size-4" />
+                        Ajustes
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          setIsLogoutOpen(true);
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <LogOut className="size-4" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden md:block cursor-pointer text-darkblue hover:text-primary "
+                onClick={() => setIsLoginOpen(true)}
+              >
+                <User className="size-6!" />
+              </Button>
+            )}
 
             {/* Cart Button */}
             <Button
@@ -153,11 +258,22 @@ export function Navbar() {
               )}
             </Button>
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
       <SearchModal open={openSearch} onClose={() => setOpenSearch(false)} />
+
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <LogoutModal
+        isOpen={isLogoutOpen}
+        onClose={() => setIsLogoutOpen(false)}
+        onConfirm={() => {
+          logout();
+          setIsLogoutOpen(false);
+        }}
+      />
       <CartSidebar open={isOpen} onClose={closeCart} />
-    </nav>
+
+
+    </nav >
   );
 }
