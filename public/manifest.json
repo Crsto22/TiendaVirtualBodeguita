@@ -4,7 +4,7 @@
   "description": "Tu bodega de confianza con los mejores productos y precios",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e3a8a",
+  "background_color": "#113d4e",
   "theme_color": "#44943b",
   "orientation": "portrait-primary",
   "icons": [
