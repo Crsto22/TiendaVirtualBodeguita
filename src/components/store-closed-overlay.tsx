@@ -45,8 +45,8 @@ export function StoreClosedOverlay() {
   if (tiendaAbierta || isDismissed) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center relative animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center relative animate-in fade-in zoom-in duration-300 will-change-transform">
         {/* Imagen de tienda cerrada */}
         <div className="mb-6">
           <Image
