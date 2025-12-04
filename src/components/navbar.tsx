@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Search, User, ChevronDown, LogOut, Settings, Package } from "lucide-react";
+import { ShoppingCart, Search, User, ChevronDown, LogOut, Settings, Package, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import SearchModal from "@/components/search-modal";
@@ -11,11 +11,15 @@ import CartSidebar from "@/components/cart-sidebar";
 import { useCartStore } from "@/store/cart-store";
 import { categories } from "@/data/categories";
 import { useAuth } from "@/context/AuthContext";
+import { useStoreConfigContext } from "@/context/StoreConfigContext";
 
 import { LoginModal } from "@/components/auth/login-modal";
 import { LogoutModal } from "@/components/auth/logout-modal";
 
 export function Navbar() {
+  // Store config
+  const { tiendaAbierta } = useStoreConfigContext();
+  
   // Zustand store - Obtener items directamente para forzar re-render
   const items = useCartStore(state => state.items);
   const isOpen = useCartStore(state => state.isOpen);
@@ -75,7 +79,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className=" md:hidden  cursor-pointer text-darkblue hover:text-primary border border-gray-200 border-2 rounded-full"
+              className="md:hidden cursor-pointer text-darkblue hover:text-primary border-2 border-gray-200 rounded-full"
               onClick={() => setIsLoginOpen(true)
               }
             >
@@ -123,7 +127,7 @@ export function Navbar() {
                         <Link
                           key={index}
                           href={`/coleccion/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, '-'))}`}
-                          className="group flex flex-col items-center p-3 rounded-xl hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 transition-all duration-200 border-2 border-transparent hover:border-primary/20"
+                          className="group flex flex-col items-center p-3 rounded-xl hover:bg-linear-to-br hover:from-primary/5 hover:to-primary/10 transition-all duration-200 border-2 border-transparent hover:border-primary/20"
                           onClick={() => setDropdownOpen(false)}
                         >
                           {/* Imagen de categoría */}
@@ -255,17 +259,27 @@ export function Navbar() {
             )}
 
             {/* Cart Button */}
-            <Button
-              onClick={openCart}
-              className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2 relative"
-            >
-              <ShoppingCart className="size-6!" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
+            {tiendaAbierta ? (
+              <Button
+                onClick={openCart}
+                className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2 relative"
+              >
+                <ShoppingCart className="size-6!" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {totalItems}
+                  </span>
+                )}
+              </Button>
+            ) : (
+              <Button
+                disabled
+                className="bg-red-400 cursor-not-allowed text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2"
+              >
+                <span className="text-xs md:text-base ">TIENDA CERRADA </span>
+                <X className="size-6!" />
+              </Button>
+            )}
           </div>
         </div >
       </div >

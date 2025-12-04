@@ -2,7 +2,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
-import { Search, X, ShoppingCart, Loader2 } from "lucide-react";
+import { Search, X, ShoppingCart, Loader2, Recycle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useCallback } from "react";
@@ -374,6 +374,12 @@ export default function BuscarPage() {
                         <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 text-white">
                           {product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
                         </Badge>
+                        {product.retornable && (
+                          <span className="text-secondary text-[10px] sm:text-xs font-semibold flex items-center gap-0.5">
+                            <Recycle className="size-3" />
+                            Retornable
+                          </span>
+                        )}
                       </div>
                       
                       <h3 className="font-semibold text-xs sm:text-sm text-darkblue group-hover:text-primary transition-colors line-clamp-2 mb-2">

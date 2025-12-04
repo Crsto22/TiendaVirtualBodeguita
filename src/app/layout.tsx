@@ -3,6 +3,8 @@ import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import { LoaderWrapper } from "@/components/loader-wrapper";
 import { AuthProvider } from "@/context/AuthContext";
+import { StoreConfigProvider } from "@/context/StoreConfigContext";
+import { StoreClosedOverlay } from "@/components/store-closed-overlay";
 import { Toaster } from "@/components/ui/sonner";
 
 const poppins = Poppins({
@@ -54,8 +56,11 @@ export default function RootLayout({
       >
         <LoaderWrapper>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <StoreConfigProvider>
+              <StoreClosedOverlay />
+              {children}
+              <Toaster />
+            </StoreConfigProvider>
           </AuthProvider>
         </LoaderWrapper>
       </body>

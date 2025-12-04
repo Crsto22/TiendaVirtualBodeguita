@@ -3,6 +3,7 @@
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
+import { useStoreConfigContext } from "@/context/StoreConfigContext";
 
 interface CartSidebarProps {
   open: boolean;
@@ -29,12 +31,22 @@ function capitalizeText(text: string): string {
 }
 
 export default function CartSidebar({ open, onClose }: CartSidebarProps) {
+  // Store config
+  const { tiendaAbierta, hacerPedidos } = useStoreConfigContext();
+  
   // Zustand store
   const { items, updateQuantity, removeItem, getSubtotal, getTotal, clearCart } = useCartStore();
 
   const subtotal = getSubtotal();
   const delivery = 0; // Gratis por ahora
   const total = getTotal();
+
+  // Cerrar el carrito automáticamente cuando la tienda se cierra
+  useEffect(() => {
+    if (!tiendaAbierta && open) {
+      onClose();
+    }
+  }, [tiendaAbierta, open, onClose]);
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -175,6 +187,15 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
         {/* Footer con totales y botón de compra */}
         {items.length > 0 && (
           <div className="border-t border-gray-200 bg-white px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            {/* Mensaje cuando hacer_pedidos está deshabilitado */}
+            {!hacerPedidos && (
+              <div className="mb-3 sm:mb-4 p-3 bg-orange-50 border-2 border-orange-200 rounded-lg">
+                <p className="text-xs sm:text-sm text-orange-700 font-semibold text-center">
+                   Los pedidos no están habilitados en este momento
+                </p>
+              </div>
+            )}
+            
             {/* Resumen de precios */}
             <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
               <div className="flex items-center justify-between">
@@ -191,6 +212,35 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                   }, 0).toFixed(2)}
                 </span>
               </div>
+              
+              {/* Contador de botellas retornables */}
+              {(() => {
+                const returnableCount = items.reduce((sum, item) => {
+                  return item.retornable ? sum + item.cantidad : sum;
+                }, 0);
+                
+                if (returnableCount > 0) {
+                  return (
+                    <div className="flex items-center justify-between bg-darkblue/10 border-2 border-darkblue/30 rounded-lg px-3 py-2">
+                      <span className="text-xs sm:text-sm font-semibold text-darkblue flex items-center gap-1.5">
+                        <Image
+                          src="/Iconos/botle.svg"
+                          alt="Botella"
+                          width={20}
+                          height={20}
+                          className="size-4 sm:size-5"
+                        />
+                        Botellas pendientes
+                      </span>
+                      <span className="text-base sm:text-lg font-bold text-darkblue">
+                        {returnableCount} {returnableCount === 1 ? 'botella' : 'botellas'}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               {items.some(item => item.mostrar_precio_web === false) && (
                 <p className="text-xs text-orange-500 text-right font-medium">
                   * Algunos precios se deben consultar para saber el precio real
@@ -201,12 +251,17 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
             {/* Botones de acción */}
             <div className="space-y-1.5 sm:space-y-2">
               <Button
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all"
-                asChild
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
+                asChild={hacerPedidos}
+                disabled={!hacerPedidos}
               >
-                <Link href="/pedidos">
-                  {items.some(item => item.mostrar_precio_web === false) ? "Consultar Pedido" : "Realizar Pedido"}
-                </Link>
+                {hacerPedidos ? (
+                  <Link href="/pedidos">
+                    {items.some(item => item.mostrar_precio_web === false) ? "Consultar Pedido" : "Realizar Pedido"}
+                  </Link>
+                ) : (
+                  <span>Pedidos no disponibles</span>
+                )}
               </Button>
               <Button
                 variant="outline"

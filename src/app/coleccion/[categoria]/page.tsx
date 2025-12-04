@@ -7,14 +7,16 @@ import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Trash2, Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Trash2, Minus, Plus, ChevronLeft, ChevronRight, Recycle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
+import { useStoreConfigContext } from "@/context/StoreConfigContext";
 import { categories } from "@/data/categories";
 import { getAllProducts, getProductsByCategory } from "@/lib/api";
 import type { Product } from "@/types/product";
-import { ProductWeightSelector } from "@/components/product-weight-selector";
+import { ProductWeightSelector } from "@/components/product/product-weight-selector";
+import { ProductNewBadge } from "@/components/product/product-new-badge";
 
 // Función para capitalizar texto
 function capitalizeText(text: string): string {
@@ -37,6 +39,9 @@ export default function CategoriaPage() {
     ? null
     : decodeURIComponent(categoriaSlug).replace(/-/g, ' ');
 
+  // Store config
+  const { tiendaAbierta } = useStoreConfigContext();
+  
   // Zustand store
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
@@ -269,9 +274,9 @@ export default function CategoriaPage() {
                     href={`/productos/${product.producto_web}`}
                     className="group"
                   >
-                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-[240px] sm:h-[280px] md:h-[320px] flex flex-col group-hover:scale-[1.02]">
+                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-60 sm:h-[280px] md:h-80 flex flex-col group-hover:scale-[1.02]">
                       {/* Image Container */}
-                      <div className="relative h-[110px] sm:h-[140px] md:h-[160px] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                      <div className="relative h-[110px] sm:h-[140px] md:h-40 bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                         {product.imagen ? (
                           <Image
                             src={product.imagen}
@@ -285,6 +290,8 @@ export default function CategoriaPage() {
                             <ShoppingCart className="size-6 sm:size-8 md:size-10 text-gray-400" />
                           </div>
                         )}
+                        
+                        <ProductNewBadge product={product} />
                       </div>
 
                       {/* Product Info */}
@@ -295,8 +302,14 @@ export default function CategoriaPage() {
                         </h3>
 
                         {/* Unit Type */}
-                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1">
-                          {product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1 flex items-center gap-1">
+                          <span>{product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}</span>
+                          {product.retornable && (
+                            <span className="text-secondary font-semibold flex items-center gap-0.5">
+                              <Recycle className="size-3" />
+                              Retornable
+                            </span>
+                          )}
                         </p>
 
                         {/* Price and Cart Container */}
@@ -312,7 +325,7 @@ export default function CategoriaPage() {
 
                           {/* Botón de carrito o controles */}
                           <div className="flex justify-center md:justify-end">
-                            {(() => {
+                            {tiendaAbierta && (() => {
                               const cartItem = items.find(item => item.id === product.id);
                               const quantityInCart = items.reduce((acc, item) => {
                                 if (item.id === product.id || item.id.startsWith(`${product.id}-`)) {

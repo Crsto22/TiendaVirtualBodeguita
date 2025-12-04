@@ -17,17 +17,20 @@ import {
   Minus,
   Plus,
   Store,
-  Info
+  Info,
+  Recycle
 } from "lucide-react";
 import { getProductDetail } from "@/lib/api";
 import { ProductDetailResponse, Product } from "@/types/product";
-import { ProductWeightSelector } from "@/components/product-weight-selector";
+import { ProductWeightSelector } from "@/components/product/product-weight-selector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef } from "react";
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import { useCartStore } from "@/store/cart-store";
+import { useStoreConfigContext } from "@/context/StoreConfigContext";
+import { ProductNewBadge } from "@/components/product/product-new-badge";
 
 // Función para capitalizar texto
 function capitalizeText(text: string): string {
@@ -49,6 +52,9 @@ export default function ProductDetailPage() {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  // Store config
+  const { tiendaAbierta } = useStoreConfigContext();
+  
   // Zustand store
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
@@ -191,6 +197,8 @@ export default function ProductDetailPage() {
                     <Package className="size-20 sm:size-24 text-gray-300" />
                   </div>
                 )}
+                
+                <ProductNewBadge product={product} className="top-3 left-3 px-3 py-1.5 text-xs sm:text-sm" />
               </div>
 
               {/* Botón compartir */}
@@ -261,6 +269,12 @@ export default function ProductDetailPage() {
                   Se vende por: <span className="font-semibold">
                     {product.tipo_unidad === 'kilogramo' ? 'Kilogramo' : 'Unidad'}
                   </span>
+                  {product.retornable && (
+                    <span className="text-secondary font-semibold ml-2 inline-flex items-center gap-1">
+                      <Recycle className="size-4" />
+                      Retornable
+                    </span>
+                  )}
                 </span>
               </div>
 
@@ -305,7 +319,7 @@ export default function ProductDetailPage() {
 
               {/* Botón de acción o Controles de cantidad */}
               <div className="mt-auto">
-                {cartItem && product.tipo_unidad !== 'kilogramo' ? (
+                {tiendaAbierta && cartItem && product.tipo_unidad !== 'kilogramo' ? (
                   <div className="inline-flex items-center gap-2 sm:gap-3 bg-white border-2 border-gray-200 rounded-full px-2 py-2 shadow-md">
                     <button
                       onClick={() => {
@@ -340,7 +354,7 @@ export default function ProductDetailPage() {
                       <Plus className="size-5 sm:size-6" />
                     </button>
                   </div>
-                ) : (
+                ) : tiendaAbierta ? (
                   <div className="relative inline-block">
                     <button
                       onClick={handleAddToCart}
@@ -376,7 +390,7 @@ export default function ProductDetailPage() {
                       </div>
                     )}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -406,6 +420,7 @@ export default function ProductDetailPage() {
 // Componente separado para el carrusel de productos relacionados
 function RelatedProductsCarousel({ products }: { products: Product[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { tiendaAbierta } = useStoreConfigContext();
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -461,6 +476,8 @@ function RelatedProductsCarousel({ products }: { products: Product[] }) {
                     <ShoppingCart className="size-8 sm:size-10 md:size-12 text-gray-400" />
                   </div>
                 )}
+                
+                <ProductNewBadge product={relatedProduct} />
               </div>
 
               {/* Product Info */}
@@ -471,8 +488,14 @@ function RelatedProductsCarousel({ products }: { products: Product[] }) {
                 </h3>
 
                 {/* Unit Type */}
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2">
-                  {relatedProduct.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2 flex items-center gap-1">
+                  <span>{relatedProduct.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}</span>
+                  {relatedProduct.retornable && (
+                    <span className="text-secondary font-semibold flex items-center gap-0.5">
+                      <Recycle className="size-3" />
+                      Retornable
+                    </span>
+                  )}
                 </p>
 
                 {/* Price and Cart Container */}
@@ -495,7 +518,7 @@ function RelatedProductsCarousel({ products }: { products: Product[] }) {
 
                   {/* Botón de carrito o controles */}
                   <div className="flex justify-center md:justify-end md:shrink-0">
-                    {(() => {
+                    {tiendaAbierta && (() => {
                       const cartItem = items.find(item => item.id === relatedProduct.id);
 
                       if (cartItem) {

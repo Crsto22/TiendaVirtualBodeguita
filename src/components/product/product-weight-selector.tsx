@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Product } from "@/types/product";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
+import { useStoreConfigContext } from "@/context/StoreConfigContext";
 
 interface ProductWeightSelectorProps {
     product: Product;
@@ -19,6 +20,7 @@ type TabType = 'monto' | 'peso' | 'unidades';
 
 export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeightSelectorProps) {
     const [isDesktop, setIsDesktop] = useState(false);
+    const { tiendaAbierta } = useStoreConfigContext();
     const { addItem } = useCartStore();
 
     // Detectar desktop
@@ -204,7 +206,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                 <select
                                     value={unidadPeso}
                                     onChange={(e) => setUnidadPeso(e.target.value as 'kg' | 'g')}
-                                    className="w-full h-14 border rounded-full border-gray-200 border-2  border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    className="w-full h-14 rounded-full border-2 border-gray-200 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 >
                                     <option value="kg">Kg</option>
                                     <option value="g">g</option>
@@ -275,17 +277,19 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
 
             {/* Footer Actions */}
             <div className="pt-4">
-                <Button
-                    className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-white rounded-full"
-                    onClick={handleAddToCart}
-                    disabled={
-                        (activeTab === 'monto' && (!parseFloat(monto) || parseFloat(monto) < 0.50)) ||
-                        (activeTab === 'peso' && !parseFloat(peso))
-                    }
-                >
-                    <ShoppingCart className="mr-2 size-5" />
-                    Agregar al Carrito
-                </Button>
+                {tiendaAbierta && (
+                    <Button
+                        className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-white rounded-full"
+                        onClick={handleAddToCart}
+                        disabled={
+                            (activeTab === 'monto' && (!parseFloat(monto) || parseFloat(monto) < 0.50)) ||
+                            (activeTab === 'peso' && !parseFloat(peso))
+                        }
+                    >
+                        <ShoppingCart className="mr-2 size-5" />
+                        Agregar al Carrito
+                    </Button>
+                )}
             </div>
         </div>
     );
@@ -307,7 +311,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent side="bottom" className="rounded-t-[20px] px-4 pt-6 pb-8 bg-white">
+            <SheetContent side="bottom" className="rounded-t-[20px] px-4 pt-6 pb-8 bg-white data-[state=open]:duration-300 data-[state=closed]:duration-200 will-change-transform">
                 <SheetHeader className="mb-4">
                     <SheetTitle className="text-xl font-bold text-center text-darkblue">
                         {product.nombre}

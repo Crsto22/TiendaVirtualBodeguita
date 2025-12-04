@@ -30,6 +30,11 @@ export interface ApiResponse {
   total_categorias: number;
   cache_age_seconds: number;
   data: Category[];
+  // Bloque opcional que puede venir del endpoint /inicio con los productos nuevos
+  productos_nuevos?: {
+    total: number;
+    productos: Product[];
+  } | Product[];
 }
 
 export interface SearchResponse {

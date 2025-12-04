@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ShoppingCart, Trash2, Minus, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Trash2, Minus, Plus, Recycle } from "lucide-react";
 import { useRef, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { getProductsClient } from "@/lib/api";
 import { Category, Product } from "@/types/product";
 import { useCartStore } from "@/store/cart-store";
-import { ProductWeightSelector } from "@/components/product-weight-selector";
+import { useStoreConfigContext } from "@/context/StoreConfigContext";
+import { ProductWeightSelector } from "@/components/product/product-weight-selector";
+import { ProductNewBadge } from "@/components/product/product-new-badge";
 
 // Función para capitalizar texto (primera letra mayúscula, resto minúscula)
 function capitalizeText(text: string): string {
@@ -23,6 +25,7 @@ function capitalizeText(text: string): string {
 // Componente individual para el carrusel de cada categoría
 function CategoryCarousel({ category }: { category: Category }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { tiendaAbierta } = useStoreConfigContext();
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
   const scroll = (direction: "left" | "right") => {
@@ -58,17 +61,22 @@ function CategoryCarousel({ category }: { category: Category }) {
   // Generar slug de la categoría para la URL
   const categorySlug = category.categoria_nombre.toLowerCase().replace(/\s+/g, '-');
 
+  // Verificar si es la sección de "Productos nuevos" (sin botón Ver más)
+  const isNewProductsSection = category.categoria_id === 'nuevos';
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl md:text-2xl font-bold text-darkblue">
           {category.categoria_nombre}
         </h3>
-        <Link href={`/coleccion/${encodeURIComponent(categorySlug)}`}>
-          <Button variant="ghost" className="text-primary hover:text-primary/80 text-sm">
-            Ver más →
-          </Button>
-        </Link>
+        {!isNewProductsSection && (
+          <Link href={`/coleccion/${encodeURIComponent(categorySlug)}`}>
+            <Button variant="ghost" className="text-primary hover:text-primary/80 text-sm">
+              Ver más →
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="relative">
@@ -108,6 +116,8 @@ function CategoryCarousel({ category }: { category: Category }) {
                       <ShoppingCart className="size-8 sm:size-10 md:size-12 text-gray-400" />
                     </div>
                   )}
+                  
+                  <ProductNewBadge product={product} />
                 </div>
 
                 {/* Product Info */}
@@ -118,8 +128,14 @@ function CategoryCarousel({ category }: { category: Category }) {
                   </h3>
 
                   {/* Unit Type */}
-                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2">
-                    {product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2 flex items-center gap-1">
+                    <span>{product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}</span>
+                    {product.retornable && (
+                      <span className="text-secondary font-semibold flex items-center gap-0.5">
+                        <Recycle className="size-3" />
+                        Retornable
+                      </span>
+                    )}
                   </p>
 
                   {/* Price and Cart Container */}
@@ -142,7 +158,7 @@ function CategoryCarousel({ category }: { category: Category }) {
 
                     {/* Botón de carrito o controles */}
                     <div className="flex justify-center md:justify-end">
-                      {(() => {
+                      {tiendaAbierta && (() => {
                         const cartItem = items.find(item => item.id === product.id);
                         const quantityInCart = items.reduce((acc, item) => {
                           if (item.id === product.id || item.id.startsWith(`${product.id}-`)) {
@@ -239,15 +255,32 @@ function CategoryCarousel({ category }: { category: Category }) {
 // Fetcher function para SWR
 const fetcher = async () => {
   const response = await getProductsClient();
+
+  // Extraer productos nuevos defensivamente: puede venir como array o como { total, productos }
+  let productosNuevos: Product[] | undefined = undefined;
+  if (Array.isArray(response.productos_nuevos)) {
+    productosNuevos = response.productos_nuevos as Product[];
+  } else if (response.productos_nuevos && (response.productos_nuevos as any).productos) {
+    productosNuevos = (response.productos_nuevos as any).productos as Product[];
+  }
+
   // Filtrar categorías que tienen productos y tomar solo las primeras 5
-  return response.data
+  const categorias = response.data
     .filter(category => category.productos && category.productos.length > 0)
     .slice(0, 5);
+
+  return {
+    categorias,
+    productosNuevos,
+  };
 };
 
 export function ProductsSection() {
   // SWR con cache automático
-  const { data: categories, error, isLoading } = useSWR<Category[]>(
+  const { data, error, isLoading } = useSWR<{
+    categorias: Category[];
+    productosNuevos?: Product[];
+  }>(
     'home-products', // Key única para este dato
     fetcher,
     {
@@ -258,7 +291,7 @@ export function ProductsSection() {
   );
 
   // Skeleton loader solo en la primera carga (cuando no hay data en cache)
-  if (isLoading && !categories) {
+  if (isLoading && !data) {
     return (
       <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -297,11 +330,26 @@ export function ProductsSection() {
     );
   }
 
+  const categorias = data?.categorias;
+  const productosNuevos = data?.productosNuevos;
+
   return (
     <section className="py-8 bg-gray-50">
       <div className="container mx-auto px-4">
+        {/* Productos nuevos (si existen) */}
+        {productosNuevos && productosNuevos.length > 0 && (
+          <CategoryCarousel
+            key="nuevos"
+            category={{
+              categoria_id: 'nuevos',
+              categoria_nombre: 'Productos nuevos',
+              productos: productosNuevos,
+            }}
+          />
+        )}
+
         {/* Render each category with its carousel */}
-        {categories?.map((category) => (
+        {categorias?.map((category) => (
           <CategoryCarousel key={category.categoria_id} category={category} />
         ))}
 
