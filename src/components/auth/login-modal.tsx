@@ -33,13 +33,18 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             setIsLoading(true);
             const user = await signInWithGoogle();
             if (user) {
-                toast.success(`Bienvenido, ${user.nombre}`, {
+                toast.success(`¡Bienvenido, ${user.nombre}!`, {
                     duration: 3000,
+                    description: "Ya puedes realizar tu pedido"
                 });
+                // Cerrar el modal después de un login exitoso
+                onClose();
             }
-            onClose();
         } catch (error) {
             console.error("Error en login:", error);
+            toast.error("Error al iniciar sesión", {
+                description: "Por favor, intenta nuevamente"
+            });
         } finally {
             setIsLoading(false);
         }

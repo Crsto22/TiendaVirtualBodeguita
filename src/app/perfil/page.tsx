@@ -135,7 +135,7 @@ export default function PerfilPage() {
             <MobileDock />
 
             {/* Hero Section */}
-            <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent overflow-hidden">
+            <div className="relative bg-linear-to-br from-primary/10 via-primary/5 to-transparent overflow-hidden">
                 {/* Decorative background elements */}
                 <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
                 <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -144,12 +144,12 @@ export default function PerfilPage() {
                 <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20 relative">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
                         {/* Avatar */}
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <div className="relative">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full blur opacity-25"></div>
+                                <div className="absolute inset-0 bg-linear-to-br from-primary to-secondary rounded-full blur opacity-25"></div>
                                 <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white shadow-2xl relative ring-4 ring-primary/10">
                                     <AvatarImage src={user?.foto_url || ""} alt={user?.nombre || "Usuario"} className="object-cover" />
-                                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-white text-4xl md:text-5xl font-bold">
+                                    <AvatarFallback className="bg-linear-to-br from-primary to-primary/80 text-white text-4xl md:text-5xl font-bold">
                                         {user?.nombre?.charAt(0) || "U"}
                                     </AvatarFallback>
                                 </Avatar>
@@ -157,7 +157,7 @@ export default function PerfilPage() {
                         </div>
 
                         {/* User Info */}
-                        <div className="flex-grow text-center md:text-left space-y-2 md:pt-4">
+                        <div className="grow text-center md:text-left space-y-2 md:pt-4">
                             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-darkblue tracking-tight">
                                 {user?.nombre || "Mi Perfil"}
                             </h1>
@@ -254,7 +254,7 @@ export default function PerfilPage() {
                                 <div className="pt-4 space-y-3">
                                     <Button
                                         type="submit"
-                                        className="w-full h-12 md:h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold text-sm md:text-base rounded-xl shadow-lg hover:shadow-xl"
+                                        className="w-full h-12 md:h-14 bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold text-sm md:text-base rounded-xl shadow-lg hover:shadow-xl"
                                         disabled={isSaving}
                                     >
                                         {isSaving ? (

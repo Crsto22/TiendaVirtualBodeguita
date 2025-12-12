@@ -2,7 +2,7 @@ import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import { HeroCarousel } from "@/components/inicio/hero-carousel";
 import { CategoriesSection } from "@/components/inicio/categories-section";
-import { ProductsSection } from "@/components/inicio/products-section";
+import { ProductsSection } from "@/components/product/products-section";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 

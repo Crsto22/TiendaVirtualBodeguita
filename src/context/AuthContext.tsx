@@ -10,17 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebase";
-
-// Definición del tipo de usuario en nuestra app (combinando Auth + Firestore)
-export interface AppUser {
-    uid: string;
-    email: string | null;
-    nombre: string | null;
-    foto_url: string | null;
-    telefono?: string;
-    direccion?: string;
-    referencia?: string;
-}
+import type { AppUser } from "@/types/user";
 
 interface AuthContextType {
     user: AppUser | null;

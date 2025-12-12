@@ -16,7 +16,7 @@ export interface Product {
   retornable: boolean;
   categoria_nombre?: string; // Incluido en resultados de búsqueda
   mostrar_precio_web?: boolean;
-  tipo_producto_kg?: 'granel' | 'pieza' | 'peso_fijo';
+  tipo_producto_kg?: 'granel' | 'pieza' | 'peso_fijo' | 'precio_directo';
 }
 
 export interface Category {
@@ -56,6 +56,7 @@ export interface ProductDetailResponse {
 // Interface para items en el carrito (extiende Product + cantidad)
 export interface CartItem extends Product {
   cantidad: number;
+  cantidad_helada?: number; // Cantidad de bebidas heladas (solo para bebidas con precio_alternativo "Helada")
 }
 
 // Paginación

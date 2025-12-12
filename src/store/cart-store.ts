@@ -11,6 +11,7 @@ interface CartState {
   addItem: (item: Omit<CartItem, 'cantidad'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, cantidad: number) => void;
+  updateCantidadHelada: (id: string, cantidadHelada: number) => void;
   clearCart: () => void;
   toggleCart: () => void;
   openCart: () => void;
@@ -34,11 +35,11 @@ export const useCartStore = create<CartState>()(
         const existingItem = items.find(item => item.id === newItem.id);
 
         if (existingItem) {
-          // Si el item ya existe, incrementar cantidad (respetando stock)
+          // Si el item ya existe, incrementar cantidad sin límite
           set({
             items: items.map(item =>
               item.id === newItem.id
-                ? { ...item, cantidad: Math.min(item.cantidad + 1, item.stock) }
+                ? { ...item, cantidad: item.cantidad + 1 }
                 : item
             ),
           });
@@ -67,9 +68,25 @@ export const useCartStore = create<CartState>()(
         }
 
         set({
+          items: get().items.map(item => {
+            if (item.id === id) {
+              // Sin límite de cantidad
+              const newCantidad = cantidad;
+              // Si la cantidad helada es mayor que la nueva cantidad, ajustarla
+              const newCantidadHelada = item.cantidad_helada ? Math.min(item.cantidad_helada, newCantidad) : 0;
+              return { ...item, cantidad: newCantidad, cantidad_helada: newCantidadHelada };
+            }
+            return item;
+          }),
+        });
+      },
+
+      // Actualizar cantidad de bebidas heladas
+      updateCantidadHelada: (id, cantidadHelada) => {
+        set({
           items: get().items.map(item =>
             item.id === id
-              ? { ...item, cantidad: Math.min(cantidad, item.stock) }
+              ? { ...item, cantidad_helada: Math.max(0, Math.min(cantidadHelada, item.cantidad)) }
               : item
           ),
         });
@@ -103,10 +120,25 @@ export const useCartStore = create<CartState>()(
       // Obtener subtotal (sin delivery)
       getSubtotal: () => {
         return get().items.reduce((total, item) => {
-          const precio = item.has_precio_alternativo && item.precio_alternativo
-            ? item.precio_alternativo
-            : (item.precio || 0);
-          return total + (precio * item.cantidad);
+          // Precio base
+          const precioBase = item.precio || 0;
+          
+          // Verificar si es bebida helada (solo si motivo es "Helada")
+          const esBebidaHelada = item.has_precio_alternativo && 
+                                 item.motivo_precio_alternativo === 'Helada' &&
+                                 item.precio_alternativo &&
+                                 (item.cantidad_helada || 0) > 0;
+          
+          if (esBebidaHelada) {
+            // Calcular: (cantidad normal * precio normal) + (cantidad helada * precio helado)
+            const cantidadNormal = item.cantidad - (item.cantidad_helada || 0);
+            const precioNormal = cantidadNormal * precioBase;
+            const precioHelado = (item.cantidad_helada || 0) * (item.precio_alternativo || precioBase);
+            return total + precioNormal + precioHelado;
+          }
+          
+          // Precio normal para todos los demás productos
+          return total + (precioBase * item.cantidad);
         }, 0);
       },
 

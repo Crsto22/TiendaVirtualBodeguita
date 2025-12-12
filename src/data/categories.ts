@@ -85,7 +85,7 @@ export const categories: Category[] = [
     description: "Verduras frescas"
   },
   { 
-    name: "Lácteos y Huevos", 
+    name: "Lacteos y Huevos", 
     image: "/Categorias/LacteosYHuevos.png", 
     color: "bg-[#7BA8C8]", 
     href: "/categorias",

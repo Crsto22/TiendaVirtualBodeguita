@@ -274,7 +274,7 @@ export default function CategoriaPage() {
                     href={`/productos/${product.producto_web}`}
                     className="group"
                   >
-                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-60 sm:h-[280px] md:h-80 flex flex-col group-hover:scale-[1.02]">
+                    <div className={`bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-60 sm:h-[280px] md:h-80 flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                       {/* Image Container */}
                       <div className="relative h-[110px] sm:h-[140px] md:h-40 bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                         {product.imagen ? (
@@ -283,7 +283,7 @@ export default function CategoriaPage() {
                             alt={product.nombre}
                             fill
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                            className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
+                            className={`object-contain p-2 transition-transform duration-500 group-hover:scale-110 ${product.stock === 0 ? 'grayscale' : ''}`}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -292,6 +292,16 @@ export default function CategoriaPage() {
                         )}
                         
                         <ProductNewBadge product={product} />
+                        
+                        {/* Badge de Producto Agotado */}
+                        {product.stock === 0 && (
+                          <div className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1">
+                            <svg className="size-3 sm:size-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            Producto Agotado
+                          </div>
+                        )}
                       </div>
 
                       {/* Product Info */}
@@ -360,12 +370,9 @@ export default function CategoriaPage() {
                                     <button
                                       onClick={(e) => {
                                         e.preventDefault();
-                                        if (cartItem.cantidad < product.stock) {
-                                          updateQuantity(product.id, cartItem.cantidad + 1);
-                                        }
+                                        updateQuantity(product.id, cartItem.cantidad + 1);
                                       }}
-                                      className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center"
-                                      disabled={cartItem.cantidad >= product.stock}
+                                      className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors flex items-center justify-center"
                                     >
                                       <Plus className="size-3 sm:size-3.5" />
                                     </button>

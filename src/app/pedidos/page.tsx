@@ -14,7 +14,7 @@ export default function PedidosPage() {
       <MobileDock />
 
       {/* Header */}
-      <section className="bg-gradient-to-r from-primary to-primary/90 text-white py-8 md:py-12">
+      <section className="bg-linear-to-r from-primary to-primary/90 text-white py-8 md:py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-2 md:mb-3">Mis Pedidos</h1>
           <p className="text-base md:text-lg opacity-90">Revisa el estado de tus pedidos</p>

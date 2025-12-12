@@ -100,7 +100,7 @@ function CategoryCarousel({ category }: { category: Category }) {
               href={`/productos/${product.producto_web}`}
               className="group shrink-0"
             >
-              <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[260px] sm:h-[280px] md:h-[340px] flex flex-col group-hover:scale-[1.02]">
+              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[260px] sm:h-[280px] md:h-[340px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                 {/* Image Container */}
                 <div className="relative h-[120px] sm:h-[140px] md:h-[180px] bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                   {product.imagen ? (
@@ -109,7 +109,7 @@ function CategoryCarousel({ category }: { category: Category }) {
                       alt={product.nombre}
                       fill
                       sizes="(max-width: 640px) 150px, (max-width: 768px) 160px, (max-width: 1024px) 200px, 220px"
-                      className=""
+                      className={product.stock === 0 ? 'grayscale' : ''}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -118,6 +118,16 @@ function CategoryCarousel({ category }: { category: Category }) {
                   )}
                   
                   <ProductNewBadge product={product} />
+                  
+                  {/* Badge de Producto Agotado */}
+                  {product.stock === 0 && (
+                    <div className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1">
+                      <svg className="size-3 sm:size-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      Producto Agotado
+                    </div>
+                  )}
                 </div>
 
                 {/* Product Info */}
@@ -193,12 +203,9 @@ function CategoryCarousel({ category }: { category: Category }) {
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  if (cartItem.cantidad < product.stock) {
-                                    updateQuantity(product.id, cartItem.cantidad + 1);
-                                  }
+                                  updateQuantity(product.id, cartItem.cantidad + 1);
                                 }}
-                                className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center"
-                                disabled={cartItem.cantidad >= product.stock}
+                                className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors flex items-center justify-center"
                               >
                                 <Plus className="size-3 sm:size-3.5" />
                               </button>
@@ -209,9 +216,8 @@ function CategoryCarousel({ category }: { category: Category }) {
                         return (
                           <button
                             onClick={(e) => handleProductClick(e, product)}
-                            className="bg-primary text-white px-3 py-2.5 sm:p-2 rounded-full sm:rounded-full shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 inline-flex items-center gap-1.5 sm:gap-0 relative"
+                            className="bg-primary text-white px-3 py-2.5 sm:p-2 rounded-full sm:rounded-full shadow-md hover:bg-primary/90 transition-colors shrink-0 inline-flex items-center gap-1.5 sm:gap-0 relative"
                             aria-label="Agregar al carrito"
-                            disabled={product.stock === 0}
                           >
                             <ShoppingCart className="size-3.5 sm:size-4 md:size-5" />
                             <span className="text-xs font-semibold sm:hidden">Agregar</span>
