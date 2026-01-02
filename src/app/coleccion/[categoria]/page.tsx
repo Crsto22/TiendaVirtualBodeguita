@@ -408,19 +408,38 @@ export default function CategoriaPage() {
                                     <button
                                       onClick={(e) => {
                                         e.preventDefault();
-                                        updateQuantity(product.id, cartItem.cantidad + 1);
+                                        if (product.stock !== 0) {
+                                          updateQuantity(product.id, cartItem.cantidad + 1);
+                                        }
                                       }}
-                                      className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors flex items-center justify-center"
+                                      disabled={product.stock === 0}
+                                      className={`text-white size-6 sm:size-7 rounded-full flex items-center justify-center transition-colors ${product.stock === 0
+                                          ? "bg-gray-300 cursor-not-allowed"
+                                          : "bg-amber-500 hover:bg-amber-600"
+                                        }`}
                                     >
                                       <Plus className="size-3 sm:size-3.5" />
                                     </button>
                                   </div>
                                 );
                               } else {
+                                if (product.stock === 0) {
+                                  return (
+                                    <Button
+                                      disabled
+                                      className="bg-gray-100 text-gray-400 border border-gray-200 shadow-none hover:bg-gray-100 cursor-not-allowed rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold flex items-center gap-1 relative"
+                                    >
+                                      <ShoppingCart className="size-3 sm:size-4" />
+                                      Agotado
+                                    </Button>
+                                  );
+                                }
                                 return (
                                   <Button
                                     onClick={(e) => {
                                       e.preventDefault();
+                                      if (product.stock === 0) return;
+
                                       if (product.tipo_unidad === 'kilogramo') {
                                         setSelectedProduct(product);
                                       } else {
