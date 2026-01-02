@@ -47,6 +47,8 @@ function CategoryCarousel({ category }: { category: Category }) {
 
   const handleProductClick = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
+    if (product.stock === 0) return;
+
     if (product.tipo_unidad === 'kilogramo') {
       setSelectedProduct(product);
     } else {
@@ -116,9 +118,9 @@ function CategoryCarousel({ category }: { category: Category }) {
                       <ShoppingCart className="size-8 sm:size-10 md:size-12 text-gray-400" />
                     </div>
                   )}
-                  
+
                   <ProductNewBadge product={product} />
-                  
+
                   {/* Badge de Producto Agotado */}
                   {product.stock === 0 && (
                     <div className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1">
@@ -203,13 +205,32 @@ function CategoryCarousel({ category }: { category: Category }) {
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  updateQuantity(product.id, cartItem.cantidad + 1);
+                                  if (product.stock !== 0) {
+                                    updateQuantity(product.id, cartItem.cantidad + 1);
+                                  }
                                 }}
-                                className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors flex items-center justify-center"
+                                disabled={product.stock === 0}
+                                className={`text-white size-6 sm:size-7 rounded-full flex items-center justify-center transition-colors ${product.stock === 0
+                                    ? "bg-gray-300 cursor-not-allowed"
+                                    : "bg-amber-500 hover:bg-amber-600"
+                                  }`}
                               >
                                 <Plus className="size-3 sm:size-3.5" />
                               </button>
                             </div>
+                          );
+                        }
+
+                        if (product.stock === 0) {
+                          return (
+                            <button
+                              disabled
+                              className="bg-gray-100 text-gray-400 px-3 py-2.5 sm:p-2 rounded-full shadow-none cursor-not-allowed shrink-0 inline-flex items-center gap-1.5 sm:gap-0 border border-gray-200"
+                              aria-label="Agotado"
+                            >
+                              <ShoppingCart className="size-3.5 sm:size-4 md:size-5" />
+                              <span className="text-xs font-semibold sm:hidden">Agotado</span>
+                            </button>
                           );
                         }
 

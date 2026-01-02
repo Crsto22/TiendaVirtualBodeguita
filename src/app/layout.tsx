@@ -4,6 +4,7 @@ import "./globals.css";
 import { LoaderWrapper } from "@/components/loader-wrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import { StoreConfigProvider } from "@/context/StoreConfigContext";
+import { OrderProvider } from "@/context/OrderContext";
 import { StoreClosedOverlay } from "@/components/store-closed-overlay";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -57,9 +58,11 @@ export default function RootLayout({
         <LoaderWrapper>
           <AuthProvider>
             <StoreConfigProvider>
-              <StoreClosedOverlay />
-              {children}
-              <Toaster />
+              <OrderProvider>
+                <StoreClosedOverlay />
+                {children}
+                <Toaster />
+              </OrderProvider>
             </StoreConfigProvider>
           </AuthProvider>
         </LoaderWrapper>

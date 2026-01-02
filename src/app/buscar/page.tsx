@@ -2,7 +2,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
-import { Search, X, ShoppingCart, Loader2, Recycle } from "lucide-react";
+import { Search, X, ShoppingCart, Loader2, Recycle, ArrowRight, History, PackageOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useCallback } from "react";
@@ -10,6 +10,7 @@ import { searchProducts } from "@/lib/api";
 import type { Product } from "@/types/product";
 import Image from "next/image";
 import Link from "next/link";
+import { cn } from "@/lib/utils"; // Asumiendo que tienes cn, si no, puedes usar template literals
 
 // Función para capitalizar texto
 function capitalizeText(text: string): string {
@@ -30,6 +31,16 @@ export default function BuscarPage() {
   const [error, setError] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Detectar scroll para efectos visuales en el header
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Cargar búsquedas recientes al montar el componente
   useEffect(() => {
@@ -178,76 +189,91 @@ export default function BuscarPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+    <div className="min-h-screen bg-gray-50/50 pb-24 md:pb-10 font-sans selection:bg-primary/10 selection:text-primary">
       <Navbar />
       <MobileDock />
 
-      {/* Search Header */}
-      <section className="bg-white sticky top-14 md:top-0 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="relative">
-            <div className="relative flex items-center">
-              <Search className="absolute left-3 sm:left-4 text-gray-400 size-5 sm:size-6" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar productos..."
-                className="w-full pl-11 sm:pl-14 pr-10 sm:pr-12 py-3 sm:py-4 text-sm sm:text-lg border-2 border-gray-200 rounded-full focus:outline-none focus:border-primary transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 sm:right-4 text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Limpiar búsqueda"
-                >
-                  <X className="size-5 sm:size-6" />
-                </button>
-              )}
+      {/* Modern Sticky Search Header */}
+      <section 
+        className={cn(
+          "sticky top-14 md:top-0 z-40 transition-all duration-300 border-b",
+          isScrolled 
+            ? "bg-white/80 backdrop-blur-md shadow-sm border-gray-200/60" 
+            : "bg-white border-transparent"
+        )}
+      >
+        <div className="container mx-auto px-4 py-4 md:py-6 max-w-5xl">
+          <div className="relative group max-w-3xl mx-auto">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+              <Search className={cn(
+                "size-5 transition-colors duration-300",
+                isTyping ? "text-primary animate-pulse" : "text-gray-400 group-focus-within:text-primary"
+              )} />
             </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="¿Qué estás buscando hoy?"
+              className="w-full pl-12 pr-12 py-3.5 md:py-4 text-base md:text-lg bg-gray-100/50 border-2 border-transparent rounded-2xl focus:bg-white focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all duration-300 placeholder:text-gray-400 text-darkblue font-medium"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all duration-200"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="size-5" />
+              </button>
+            )}
           </div>
         </div>
       </section>
 
-      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
-        {/* Búsquedas recientes */}
+      <main className="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
+        
+        {/* Sección: Búsquedas Recientes */}
         {recentSearches.length > 0 && !searchQuery && (
-          <section className="mb-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-xl font-bold text-darkblue flex items-center gap-2">
-                <Search className="size-4 sm:size-5 text-primary" />
-                Búsquedas recientes
+          <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <History className="size-4" />
+                Recientes
               </h2>
               <Button 
                 variant="ghost" 
+                size="sm"
                 onClick={clearRecentSearches}
-                className="text-xs sm:text-sm text-primary hover:text-primary/80 h-8 px-2 sm:px-3"
+                className="text-xs text-primary hover:text-primary/80 hover:bg-primary/5 h-8 px-3 rounded-full transition-colors"
               >
-                Limpiar todo
+                Borrar historial
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            
+            <div className="flex flex-wrap gap-2.5">
               {recentSearches.map((search, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-gray-200 hover:border-primary transition-all group shadow-sm hover:shadow-md"
+                  className="group flex items-center bg-white hover:bg-white border border-gray-200 hover:border-primary/40 rounded-xl shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <button
                     onClick={() => handleRecentSearchClick(search)}
-                    className="text-xs sm:text-sm text-gray-700 group-hover:text-primary font-medium transition-colors"
+                    className="px-4 py-2.5 text-sm text-gray-700 group-hover:text-primary font-medium flex-1 text-left transition-colors"
                   >
                     {search}
                   </button>
+                  <div className="h-4 w-px bg-gray-200 group-hover:bg-primary/10 transition-colors"></div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       removeRecentSearch(search);
                     }}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    className="px-2.5 py-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
                     aria-label={`Eliminar "${search}"`}
                   >
-                    <X className="size-3.5 sm:size-4" />
+                    <X className="size-3.5" />
                   </button>
                 </div>
               ))}
@@ -255,150 +281,190 @@ export default function BuscarPage() {
           </section>
         )}
 
-        {/* Mensaje cuando no hay búsquedas recientes */}
+        {/* Sección: Estado vacío inicial (Sin historial ni búsqueda) */}
         {recentSearches.length === 0 && !searchQuery && (
-          <section className="text-center py-12 sm:py-16">
-            <div className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-dashed border-gray-200 max-w-md mx-auto">
-              <Search className="size-12 sm:size-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-base sm:text-lg font-bold text-darkblue mb-2">
-                No hay búsquedas recientes
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
-                Tus búsquedas se guardarán aquí para que puedas acceder a ellas fácilmente
-              </p>
+          <section className="flex flex-col items-center justify-center py-20 text-center animate-in zoom-in-95 duration-500">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-primary/5 rounded-full blur-2xl transform scale-150"></div>
+              <div className="relative bg-white p-6 rounded-full shadow-lg border border-gray-100">
+                <Search className="size-12 text-primary/80" />
+              </div>
             </div>
+            <h3 className="text-xl md:text-2xl font-bold text-darkblue mb-3">
+              Encuentra tus favoritos
+            </h3>
+            <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
+              Explora miles de productos frescos y de calidad. Escribe para comenzar.
+            </p>
           </section>
         )}
 
-        {/* Resultados de búsqueda */}
+        {/* Sección: Resultados y Estados de Búsqueda */}
         {searchQuery && (
-          <section>
-            <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
-              <h2 className="text-base sm:text-lg font-bold text-darkblue">
-                Resultados: <span className="text-white">"{searchQuery}"</span>
+          <section className="space-y-6">
+            
+            {/* Header de Resultados */}
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-lg md:text-xl font-bold text-darkblue truncate pr-4">
+                {isTyping ? (
+                  <span className="text-gray-400 animate-pulse">Buscando...</span>
+                ) : (
+                  <>Resultados para <span className="text-primary">"{searchQuery}"</span></>
+                )}
               </h2>
-              {totalResults > 0 && (
-                <Badge variant="secondary" className="text-xs sm:text-sm px-2 sm:px-3 py-1">
-                  {totalResults} {totalResults === 1 ? 'producto' : 'productos'}
+              {!isTyping && totalResults > 0 && (
+                <Badge variant="secondary" className="bg-darkblue/5 text-darkblue hover:bg-darkblue/10 transition-colors px-3 py-1 text-xs md:text-sm font-medium whitespace-nowrap">
+                  {totalResults} {totalResults === 1 ? 'resultado' : 'resultados'}
                 </Badge>
               )}
             </div>
 
+            {/* Contenido Condicional */}
             {isTyping ? (
-              // Skeleton loader mientras el usuario escribe y busca
-              <div className="space-y-3 sm:space-y-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-white rounded-xl border-2 border-gray-100 p-3 sm:p-4 flex gap-3 sm:gap-4 items-center animate-pulse"
-                  >
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-200 shrink-0"></div>
-                    <div className="flex-1 space-y-2">
+              // Modern Skeleton Loader
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4 items-start animate-pulse">
+                    <div className="w-24 h-24 rounded-xl bg-gray-200 shrink-0"></div>
+                    <div className="flex-1 space-y-3 py-1">
                       <div className="flex gap-2">
-                        <div className="h-5 w-16 bg-gray-200 rounded-full"></div>
-                        <div className="h-5 w-12 bg-gray-200 rounded-full"></div>
+                        <div className="h-5 w-20 bg-gray-200 rounded-md"></div>
+                        <div className="h-5 w-16 bg-gray-200 rounded-md"></div>
                       </div>
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                      <div className="h-8 w-24 bg-gray-200 rounded-lg mt-2"></div>
                     </div>
                   </div>
                 ))}
-                <p className="text-center text-xs sm:text-sm text-gray-500 py-2 flex items-center justify-center gap-2">
-                  <Loader2 className="size-4 animate-spin" />
-                  Buscando resultados...
-                </p>
               </div>
             ) : error ? (
-              <div className="bg-white rounded-xl p-6 sm:p-8 text-center border-2 border-red-200">
-                <div className="size-12 sm:size-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <ShoppingCart className="size-6 sm:size-8 text-red-500" />
+              // Error State
+              <div className="bg-red-50/50 rounded-3xl p-10 text-center border border-red-100 max-w-lg mx-auto mt-8">
+                <div className="bg-white p-4 rounded-full w-fit mx-auto shadow-sm mb-4">
+                  <PackageOpen className="size-8 text-red-500" />
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-darkblue mb-2">
-                  Error en la búsqueda
-                </h3>
-                <p className="text-gray-600 text-xs sm:text-sm">{error}</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Algo salió mal</h3>
+                <p className="text-gray-600 mb-2">{error}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => performSearch(searchQuery)}
+                  className="mt-4 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  Intentar de nuevo
+                </Button>
               </div>
             ) : searchQuery.trim().length < 3 ? (
-              <div className="bg-white rounded-xl p-6 sm:p-8 text-center border-2 border-dashed border-gray-300">
-                <Search className="mx-auto mb-3 sm:mb-4 text-gray-300 size-12 sm:size-16" />
-                <h3 className="text-base sm:text-lg font-bold text-darkblue mb-2">
-                  Escribe más caracteres
-                </h3>
-                <p className="text-gray-600 text-xs sm:text-sm">
-                  Necesitas escribir al menos 3 caracteres ({3 - searchQuery.trim().length} más)
+              // Min Characters State
+              <div className="bg-white rounded-3xl p-10 text-center border border-dashed border-gray-200 max-w-lg mx-auto mt-8">
+                <div className="bg-primary/5 p-4 rounded-full w-fit mx-auto mb-4">
+                  <Search className="size-8 text-primary/40" />
+                </div>
+                <h3 className="text-lg font-bold text-darkblue mb-2">Sigue escribiendo...</h3>
+                <p className="text-gray-500 text-sm">
+                  Necesitamos al menos 3 caracteres para buscar. 
+                  <span className="block mt-1 font-medium text-primary">
+                    Faltan {3 - searchQuery.trim().length}
+                  </span>
                 </p>
               </div>
             ) : results.length === 0 ? (
-              <div className="bg-white rounded-xl p-6 sm:p-8 text-center border-2 border-dashed border-gray-300">
-                <Search className="mx-auto mb-3 sm:mb-4 text-gray-400 size-12 sm:size-16" />
-                <h3 className="text-base sm:text-lg font-bold text-darkblue mb-2">
-                  No se encontraron resultados
+              // No Results State
+              <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm max-w-lg mx-auto mt-8">
+                <div className="bg-gray-50 p-6 rounded-full w-fit mx-auto mb-6">
+                  <PackageOpen className="size-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-darkblue mb-3">
+                  Sin resultados
                 </h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 text-xs sm:text-sm">
-                  Intenta con otras palabras clave o explora nuestras categorías
+                <p className="text-gray-500 mb-8 max-w-xs mx-auto">
+                  No encontramos productos que coincidan con "{searchQuery}". 
+                  Intenta usar términos más generales.
                 </p>
-                <Button className="bg-primary hover:bg-primary/90 text-white text-sm h-9 sm:h-10">
-                  Ver todas las categorías
-                </Button>
+                <Link href="/categorias">
+                  <Button className="bg-darkblue text-white hover:bg-darkblue/90 rounded-full px-8 h-12 shadow-lg shadow-darkblue/20 transition-all hover:scale-105">
+                    Explorar Categorías
+                  </Button>
+                </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+              // Lista de Resultados
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
                 {results.map((product) => (
                   <Link
                     key={product.id}
                     href={`/productos/${product.producto_web}`}
-                    className="group bg-white hover:bg-gray-50 rounded-xl border-2 border-gray-100 hover:border-primary/30 p-3 sm:p-4 flex gap-3 sm:gap-4 items-center transition-all duration-200 hover:shadow-md"
+                    className="group bg-white rounded-2xl border border-gray-100 p-4 flex gap-4 items-start transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:border-primary/20 hover:-translate-y-1 relative overflow-hidden"
                   >
-                    {product.imagen ? (
-                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0 ring-2 ring-gray-100 group-hover:ring-primary/20">
+                    {/* Hover Effect Background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    {/* Image Container */}
+                    <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 group-hover:border-primary/20 transition-colors">
+                      {product.imagen ? (
                         <Image 
                           src={product.imagen} 
                           alt={product.nombre} 
                           fill 
-                          className="object-cover"
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
                         />
-                      </div>
-                    ) : (
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center shrink-0">
-                        <ShoppingCart className="text-gray-400 size-6 sm:size-8" />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <ShoppingCart className="size-8" />
+                        </div>
+                      )}
+                    </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        {product.categoria_nombre && (
-                          <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 border-primary/30 text-primary max-w-[120px] truncate ">
-                            {product.categoria_nombre}
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 text-white">
-                          {product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}
-                        </Badge>
-                        {product.retornable && (
-                          <span className="text-secondary text-[10px] sm:text-xs font-semibold flex items-center gap-0.5">
-                            <Recycle className="size-3" />
-                            Retornable
-                          </span>
-                        )}
-                      </div>
-                      
-                      <h3 className="font-semibold text-xs sm:text-sm text-darkblue group-hover:text-primary transition-colors line-clamp-2 mb-2">
-                        {capitalizeText(product.nombre)}
-                      </h3>
-                      
-                      <div className="flex items-baseline gap-2">
-                        {product.mostrar_precio_web !== false && (
-                          <>
-                            <span className="text-base sm:text-lg font-bold text-primary">
-                              S/ {(product.precio || 0).toFixed(2)}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 z-10 flex flex-col justify-between h-full min-h-[6rem]">
+                      <div>
+                        {/* Tags / Badges */}
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {product.categoria_nombre && (
+                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-100 bg-blue-50 text-blue-600 font-medium rounded-md max-w-[120px] truncate">
+                              {product.categoria_nombre}
+                            </Badge>
+                          )}
+                          {product.retornable && (
+                            <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                              <Recycle className="size-3" />
+                              Retornable
                             </span>
-                            {product.has_precio_alternativo && product.precio_alternativo && (
-                              <span className="text-[10px] sm:text-xs text-gray-500">
-                                {product.motivo_precio_alternativo}: S/ {product.precio_alternativo.toFixed(2)}
+                          )}
+                        </div>
+                        
+                        {/* Product Title */}
+                        <h3 className="font-bold text-sm md:text-base text-gray-800 leading-snug group-hover:text-primary transition-colors line-clamp-2 mb-1">
+                          {capitalizeText(product.nombre)}
+                        </h3>
+                        
+                        {/* Unit Info */}
+                        <p className="text-xs text-gray-400 font-medium">
+                          {product.tipo_unidad === 'kilogramo' ? 'Precio por kilogramo' : 'Precio por unidad'}
+                        </p>
+                      </div>
+
+                      {/* Price Section */}
+                      <div className="mt-3 flex items-end justify-between">
+                        <div className="flex flex-col">
+                          {product.mostrar_precio_web !== false && (
+                            <>
+                              <span className="text-xl md:text-2xl font-extrabold text-primary tracking-tight">
+                                S/ {(product.precio || 0).toFixed(2)}
                               </span>
-                            )}
-                          </>
-                        )}
+                              {product.has_precio_alternativo && product.precio_alternativo && (
+                                <span className="text-xs text-gray-400 line-through decoration-red-300">
+                                  S/ {product.precio_alternativo.toFixed(2)}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* Action Icon (Visual only) */}
+                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all duration-300 transform group-hover:rotate-[-15deg]">
+                          <ArrowRight className="size-4" />
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -407,7 +473,7 @@ export default function BuscarPage() {
             )}
           </section>
         )}
-      </div>
+      </main>
     </div>
   );
 }

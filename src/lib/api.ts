@@ -1,6 +1,6 @@
 import { ApiResponse, SearchResponse, ProductDetailResponse, PaginatedProductsResponse, CategoryProductsResponse } from '@/types/product';
 
-const API_BASE_URL = 'https://vanesabodeguita-api.arturo200512.workers.dev';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vanesabodeguita-api.arturo200512.workers.dev';
 
 /**
  * Obtiene todos los productos agrupados por categorías (para SSR)
@@ -93,6 +93,14 @@ export async function getProductDetail(slug: string): Promise<ProductDetailRespo
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        // Return a safe "not found" object instead of crashing
+        return {
+          success: false,
+          producto: null as any,
+          productos_relacionados: { total: 0, data: [] }
+        };
+      }
       throw new Error(`Error al obtener producto: ${response.status}`);
     }
 
@@ -100,7 +108,12 @@ export async function getProductDetail(slug: string): Promise<ProductDetailRespo
     return data;
   } catch (error) {
     console.error('Error fetching product detail:', error);
-    throw error;
+    // Return a safe failure object on network error
+    return {
+      success: false,
+      producto: null as any,
+      productos_relacionados: { total: 0, data: [] }
+    };
   }
 }
 
@@ -146,6 +159,14 @@ export async function getProductsByCategory(
     );
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          categoria: { id: '', nombre: categoryName, color: '', descripcion: '' },
+          paginacion: { pagina_actual: 1, total_paginas: 0, productos_por_pagina: 0, total_productos: 0, tiene_siguiente: false, tiene_anterior: false },
+          productos: []
+        };
+      }
       throw new Error(`Error al obtener productos de categoría: ${response.status}`);
     }
 
@@ -153,6 +174,11 @@ export async function getProductsByCategory(
     return data;
   } catch (error) {
     console.error('Error fetching products by category:', error);
-    throw error;
+    return {
+      success: false,
+      categoria: { id: '', nombre: categoryName, color: '', descripcion: '' },
+      paginacion: { pagina_actual: 1, total_paginas: 0, productos_por_pagina: 0, total_productos: 0, tiene_siguiente: false, tiene_anterior: false },
+      productos: []
+    };
   }
 }

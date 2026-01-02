@@ -7,18 +7,19 @@ import Image from "next/image";
 
 interface HeroCarouselProps {
   images: {
-    src: string;
+    desktopSrc: string;
+    mobileSrc: string;
     alt: string;
   }[];
 }
 
 export function HeroCarousel({ images }: HeroCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
-    { 
+    {
       loop: true,
       align: "center"
     },
-    [Autoplay({ delay: 4000, stopOnInteraction: false })]
+    [Autoplay({ delay: 6000, stopOnInteraction: false })] // Increased delay for better reading
   );
 
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -56,9 +57,21 @@ export function HeroCarousel({ images }: HeroCarouselProps) {
         <div className="flex">
           {images.map((image, index) => (
             <div key={index} className="flex-[0_0_100%] min-w-0">
-              <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px]">
+              {/* Contenedor Mobile (Visible solo en móvil) */}
+              <div className="relative w-full aspect-[4/3] md:hidden">
                 <Image
-                  src={image.src}
+                  src={image.mobileSrc}
+                  alt={image.alt}
+                  fill
+                  className="object-cover"
+                  priority={index === 0}
+                />
+              </div>
+
+              {/* Contenedor Desktop (Visible solo en tablet/desktop) */}
+              <div className="relative w-full hidden md:block aspect-[1920/500]">
+                <Image
+                  src={image.desktopSrc}
                   alt={image.alt}
                   fill
                   className="object-cover"
@@ -76,11 +89,10 @@ export function HeroCarousel({ images }: HeroCarouselProps) {
           <button
             key={index}
             onClick={() => scrollTo(index)}
-            className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-all ${
-              index === selectedIndex
-                ? "bg-secondary w-8 md:w-10"
-                : "bg-white/60 hover:bg-white/80"
-            }`}
+            className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-all ${index === selectedIndex
+              ? "bg-secondary w-8 md:w-10"
+              : "bg-white/60 hover:bg-white/80"
+              }`}
             aria-label={`Ir a diapositiva ${index + 1}`}
           />
         ))}

@@ -7,7 +7,7 @@ import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Trash2, Minus, Plus, ChevronLeft, ChevronRight, Recycle } from "lucide-react";
+import { ShoppingCart, Trash2, Minus, Plus, ChevronLeft, ChevronRight, Recycle, Filter, Tags, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
@@ -33,6 +33,7 @@ export default function CategoriaPage() {
   const categoriaSlug = params.categoria as string;
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAllCategories, setShowAllCategories] = useState(false); // Estado para "Ver más" en filtros
 
   // Decodificar el slug: "lacteos-y-huevos" → "Lacteos Y Huevos"
   const categoriaNombre = categoriaSlug === "todas"
@@ -41,7 +42,7 @@ export default function CategoriaPage() {
 
   // Store config
   const { tiendaAbierta } = useStoreConfigContext();
-  
+
   // Zustand store
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
@@ -176,51 +177,88 @@ export default function CategoriaPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-          {/* Sidebar de filtros - Desktop */}
-          <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 sticky top-20">
-              <h2 className="text-lg font-bold text-darkblue mb-4">
-                Categorías
-              </h2>
+          {/* Sidebar de filtros - Desktop - MODERNIZADO */}
+          <aside className="hidden lg:block w-72 shrink-0">
+            <div className="bg-white rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] p-6 sticky top-24 border border-gray-100">
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Filter className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Filtros
+                </h2>
+              </div>
 
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleCategoryChange(null)}
-                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors flex items-center justify-between ${!categoriaNombre
-                    ? "bg-primary text-white"
-                    : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                >
-                  <span className="font-medium">Todas</span>
-                  <Badge variant="secondary" className={!categoriaNombre ? "bg-white text-primary" : "bg-gray-200 text-darkblue"}>
-                    {!categoriaNombre && paginacion?.total_productos ? paginacion.total_productos : "610"}
-                  </Badge>
-                </button>
-
-                {categories.map((category, index) => (
+              <div className="space-y-6">
+                <div>
                   <button
-                    key={index}
-                    onClick={() => handleCategoryChange(category.name)}
-                    className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors flex items-center justify-between ${categoriaNombre?.toLowerCase() === category.name.toLowerCase()
-                      ? "bg-primary text-white"
-                      : "hover:bg-gray-100 text-gray-700"
-                      }`}
+                    onClick={() => setShowAllCategories(!showAllCategories)}
+                    className="w-full flex items-center justify-between gap-2 mb-4 px-2 group cursor-pointer"
                   >
-                    <span className="font-medium text-sm">{category.name}</span>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        categoriaNombre?.toLowerCase() === category.name.toLowerCase()
-                          ? "bg-white text-primary"
-                          : "bg-gray-200 text-darkblue"
-                      }
-                    >
-                      {categoriaNombre?.toLowerCase() === category.name.toLowerCase() && paginacion?.total_productos
-                        ? paginacion.total_productos
-                        : ""}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Tags className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-primary transition-colors">Categorías</h3>
+                    </div>
+                    {/* Indicador visual opcional de colapso si decidieras colapsar todo el bloque, por ahora controla la lista */}
                   </button>
-                ))}
+
+                  <div className="space-y-1.5">
+                    {/* Botón "Todas" siempre visible */}
+                    <button
+                      onClick={() => handleCategoryChange(null)}
+                      className={`w-full group text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between border ${!categoriaNombre
+                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/30"
+                        : "bg-white text-gray-600 border-transparent hover:bg-gray-50 hover:text-primary"
+                        }`}
+                    >
+                      <span className="font-medium text-sm">Todas</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${!categoriaNombre ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 group-hover:bg-primary/10 group-hover:text-primary"
+                        }`}>
+                        {!categoriaNombre && paginacion?.total_productos ? paginacion.total_productos : "All"}
+                      </span>
+                    </button>
+
+                    {/* Lista de Categorías con lógica de "Ver más" */}
+                    {categories.slice(0, showAllCategories ? undefined : 5).map((category, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleCategoryChange(category.name)}
+                        className={`w-full group text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between border ${categoriaNombre?.toLowerCase() === category.name.toLowerCase()
+                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/30"
+                          : "bg-white text-gray-600 border-transparent hover:bg-gray-50 hover:text-primary"
+                          }`}
+                      >
+                        <span className="font-medium text-sm">{category.name}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${categoriaNombre?.toLowerCase() === category.name.toLowerCase()
+                          ? "bg-white/20 text-white"
+                          : "bg-gray-100 text-gray-500 group-hover:bg-primary/10 group-hover:text-primary"
+                          }`}>
+                          {categoriaNombre?.toLowerCase() === category.name.toLowerCase() && paginacion?.total_productos
+                            ? paginacion.total_productos
+                            : ""}
+                        </span>
+                      </button>
+                    ))}
+
+                    {/* Botón Ver Más / Ver Menos */}
+                    {categories.length > 5 && (
+                      <button
+                        onClick={() => setShowAllCategories(!showAllCategories)}
+                        className="w-full mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors py-2"
+                      >
+                        {showAllCategories ? (
+                          <>
+                            Ver menos <ChevronUp className="w-3 h-3" />
+                          </>
+                        ) : (
+                          <>
+                            Ver {categories.length - 5} más <ChevronDown className="w-3 h-3" />
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </aside>
@@ -290,9 +328,9 @@ export default function CategoriaPage() {
                             <ShoppingCart className="size-6 sm:size-8 md:size-10 text-gray-400" />
                           </div>
                         )}
-                        
+
                         <ProductNewBadge product={product} />
-                        
+
                         {/* Badge de Producto Agotado */}
                         {product.stock === 0 && (
                           <div className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1">
@@ -411,62 +449,94 @@ export default function CategoriaPage() {
               </div>
             )}
 
-            {/* Mensaje si no hay productos */}
+            {/* Categoría vacía o no encontrada */}
             {!isLoading && !error && (!productos || productos.length === 0) && (
-              <div className="text-center py-12 sm:py-16">
-                <ShoppingCart className="size-14 sm:size-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-base sm:text-lg font-bold text-darkblue mb-2">
-                  No hay productos {categoriaNombre ? "en esta categoría" : "disponibles"}
+              <div className="flex flex-col items-center justify-center py-12 md:py-20 text-center animate-in fade-in zoom-in duration-500">
+
+                <div className="relative mb-6 md:mb-8 animate-in fade-in zoom-in duration-700">
+                  <Image
+                    src="/Iconos/ProductoNoEncontrado.svg"
+                    alt="Categoría Vacía"
+                    width={300}
+                    height={300}
+                    className="w-full max-w-[220px] sm:max-w-[280px] h-auto mx-auto drop-shadow-xl"
+                    priority
+                  />
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-darkblue mb-3 md:mb-4 font-heading leading-tight">
+                  {categoriaNombre ? `No encontramos '${categoriaNombre}'` : "No hay productos disponibles"}
                 </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  {categoriaNombre ? "Intenta seleccionar otra categoría" : "Vuelve más tarde"}
+
+                <p className="text-gray-500 max-w-xs sm:max-w-md mx-auto mb-8 text-sm sm:text-base font-body leading-relaxed">
+                  {categoriaNombre
+                    ? "Parece que esta categoría está vacía por el momento o no existe. ¿Por qué no exploras todo el catálogo?"
+                    : "Intenta recargar la página o vuelve más tarde."}
                 </p>
-                {categoriaNombre && (
-                  <Button
-                    onClick={() => handleCategoryChange(null)}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    Ver todos los productos
-                  </Button>
-                )}
+
+                <Button
+                  onClick={() => handleCategoryChange(null)}
+                  size="lg"
+                  className="bg-primary hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 font-bold text-sm sm:text-base px-8 h-12 rounded-xl"
+                >
+                  <Tags className="mr-2 size-4 sm:size-5" />
+                  Ver todos los productos
+                </Button>
               </div>
             )}
 
-            {/* Paginación - Optimizada para móvil */}
+            {/* Paginación Modernizada - Adaptada a Móvil */}
             {!isLoading && !error && paginacion && paginacion.total_paginas > 1 && (
-              <div className="mt-6 sm:mt-8 flex flex-col gap-3 bg-white rounded-xl p-3 sm:p-4 shadow-md">
-                <p className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                  <span className="font-semibold">{(currentPage - 1) * paginacion.productos_por_pagina + 1}</span> -
-                  <span className="font-semibold"> {Math.min(currentPage * paginacion.productos_por_pagina, paginacion.total_productos)}</span> de
-                  <span className="font-semibold"> {paginacion.total_productos}</span> productos
-                </p>
+              <div className="mt-8 sm:mt-12 flex flex-col items-center justify-center">
+                <div className="flex items-center gap-2 sm:gap-4 bg-white p-1.5 sm:p-2 pl-4 sm:pl-6 rounded-full shadow-[0_4px_20px_-2px_rgba(0,0,0,0.1)] border border-gray-100 max-w-full">
 
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={!paginacion.tiene_anterior}
-                    variant="outline"
-                    size="sm"
-                    className="border-primary rounded-full text-primary hover:bg-primary hover:text-white disabled:opacity-50 text-xs sm:text-sm px-3 sm:px-4"
-                  >
-                    <ChevronLeft className="size-3 sm:size-4 mr-1" />
-                    Anterior
-                  </Button>
+                  {/* Info Texto - Oculto en móviles muy pequeños para ahorrar espacio */}
+                  <div className="hidden xs:flex text-[10px] sm:text-sm text-gray-500 flex-col sm:flex-row sm:gap-1 text-right sm:text-left leading-tight mr-2">
+                    <span>Viendo</span>
+                    <span className="font-bold text-gray-900">
+                      {(currentPage - 1) * paginacion.productos_por_pagina + 1} - {Math.min(currentPage * paginacion.productos_por_pagina, paginacion.total_productos)}
+                    </span>
+                    <span className="hidden sm:inline">de <span className="font-bold text-primary">{paginacion.total_productos}</span> productos</span>
+                  </div>
 
-                  <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg font-semibold text-sm sm:text-base">
-                    {currentPage}
+                  <div className="h-6 sm:h-8 w-px bg-gray-200 mx-1 hidden xs:block"></div>
+
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!paginacion.tiene_anterior}
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full hover:bg-primary/10 hover:text-primary disabled:opacity-30 h-8 w-8 sm:h-10 sm:w-10 transition-transform active:scale-95"
+                    >
+                      <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
+                    </Button>
+
+                    <div className="flex items-center justify-center min-w-[2.5rem] sm:min-w-[3rem] h-8 sm:h-10 bg-primary text-white rounded-full font-bold shadow-md shadow-primary/30 text-xs sm:text-base">
+                      {currentPage}
+                    </div>
+
+                    <Button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!paginacion.tiene_siguiente}
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full hover:bg-primary/10 hover:text-primary disabled:opacity-30 h-8 w-8 sm:h-10 sm:w-10 transition-transform active:scale-95"
+                    >
+                      <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Indicador de páginas totales - Versión Móvil Explicita */}
+                <div className="mt-3 flex flex-col items-center gap-1">
+                  <span className="text-[10px] sm:text-xs font-medium text-gray-400">
+                    Página {currentPage} de {paginacion.total_paginas}
                   </span>
-
-                  <Button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={!paginacion.tiene_siguiente}
-                    variant="outline"
-                    size="sm"
-                    className="border-primary rounded-full text-primary hover:bg-primary hover:text-white disabled:opacity-50 text-xs sm:text-sm px-3 sm:px-4"
-                  >
-                    Siguiente
-                    <ChevronRight className="size-3 sm:size-4 ml-1" />
-                  </Button>
+                  {/* Info extra solo para móvil si se ocultó arriba */}
+                  <span className="xs:hidden text-[10px] text-gray-400">
+                    {(currentPage - 1) * paginacion.productos_por_pagina + 1} - {Math.min(currentPage * paginacion.productos_por_pagina, paginacion.total_productos)} de {paginacion.total_productos}
+                  </span>
                 </div>
               </div>
             )}

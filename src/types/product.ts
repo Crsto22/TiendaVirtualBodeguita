@@ -57,6 +57,7 @@ export interface ProductDetailResponse {
 export interface CartItem extends Product {
   cantidad: number;
   cantidad_helada?: number; // Cantidad de bebidas heladas (solo para bebidas con precio_alternativo "Helada")
+  detalle?: string; // Detalle de la selección (ej: "500 g", "3 unid", "S/ 5.00")
 }
 
 // Paginación

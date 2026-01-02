@@ -31,32 +31,35 @@ export function MobileDock() {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-primary/20 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] z-50">
-      <div className="flex items-center justify-around px-2 py-3">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
+      <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 ${
-                isActive
-                  ? "text-primary bg-primary/10"
-                  : "text-gray-600 hover:text-primary hover:bg-primary/5"
-              }`}
+              className="group flex flex-col items-center gap-1 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
             >
-              <Icon 
-                className={`h-6 w-6 transition-transform ${
-                  isActive ? "scale-110" : ""
-                }`} 
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <span 
-                className={`text-xs font-semibold ${
-                  isActive ? "text-primary" : ""
-                }`}
+              {/* Contenedor del Icono (Píldora) */}
+              <div
+                className={`flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${isActive
+                    ? "bg-primary/10 text-primary"
+                    : "bg-transparent text-gray-500 group-hover:bg-gray-50"
+                  }`}
+              >
+                <Icon
+                  className="h-5 w-5 transition-transform duration-200"
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+              </div>
+
+              {/* Texto */}
+              <span
+                className={`text-[10px] font-medium tracking-wide transition-colors duration-200 ${isActive ? "text-primary font-bold" : "text-gray-500"
+                  }`}
               >
                 {item.name}
               </span>

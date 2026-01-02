@@ -78,6 +78,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                // Set cookie for middleware
+                document.cookie = "auth_logged_in=true; path=/; max-age=2592000; SameSite=Lax; Secure";
+
                 // Si hay sesión de Firebase, buscar datos en Firestore
                 try {
                     const userRef = doc(db, "usuarios", firebaseUser.uid);
@@ -101,6 +104,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     setUser(null);
                 }
             } else {
+                // Remove cookie
+                document.cookie = "auth_logged_in=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
                 setUser(null);
             }
             setLoading(false);

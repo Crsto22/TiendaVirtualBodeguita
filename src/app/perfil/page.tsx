@@ -173,15 +173,29 @@ export default function PerfilPage() {
             </div>
 
             {/* Form Section */}
-            <div className="container mx-auto px-4 -mt-8 md:-mt-12 pb-12 relative">
+            <div className="container mx-auto px-4 -mt-8 md:-mt-12 pb-12 relative max-w-4xl">
                 {isLoading ? (
-                    <div className="flex justify-center items-center min-h-[400px] bg-white rounded-3xl shadow-xl">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    // Skeleton Loader
+                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="p-6 md:p-10 lg:p-12 space-y-8">
+                            <div className="space-y-3 animate-pulse">
+                                <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                                <div className="h-12 md:h-14 w-full bg-gray-100 rounded-xl"></div>
+                            </div>
+                            <div className="space-y-3 animate-pulse">
+                                <div className="h-5 w-24 bg-gray-200 rounded"></div>
+                                <div className="h-12 md:h-14 w-full bg-gray-100 rounded-xl"></div>
+                            </div>
+                            <div className="pt-4 space-y-3 animate-pulse">
+                                <div className="h-12 md:h-14 w-full bg-gray-200 rounded-xl"></div>
+                                <div className="h-12 md:h-14 w-full bg-gray-100 rounded-xl"></div>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
                         <div className="p-6 md:p-10 lg:p-12">
-                            <form onSubmit={handleSave} className="space-y-8">
+                            <form onSubmit={handleSave} className="space-y-6 md:space-y-8">
                                 {/* Nombre Completo */}
                                 <div className="space-y-3">
                                     <Label htmlFor="nombre" className="text-darkblue font-semibold text-sm md:text-base flex items-center gap-2">
@@ -193,78 +207,55 @@ export default function PerfilPage() {
                                         name="nombre"
                                         value={formData.nombre}
                                         onChange={handleInputChange}
-                                        className="h-12 md:h-14 text-sm md:text-base border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-200 hover:border-gray-300"
+                                        className="h-12 md:h-14 text-sm md:text-base border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-200 hover:border-gray-300 bg-gray-50/50"
                                         placeholder="Ingresa tu nombre completo"
                                     />
                                 </div>
 
-                                {/* Grid para Teléfono y Dirección */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                                    {/* Teléfono */}
-                                    <div className="space-y-3">
-                                        <Label htmlFor="telefono" className="text-darkblue font-semibold text-sm md:text-base flex items-center gap-2">
-                                            <Phone className="h-4 w-4 text-primary" />
-                                            Teléfono
-                                        </Label>
-                                        <Input
-                                            id="telefono"
-                                            name="telefono"
-                                            value={formData.telefono}
-                                            onChange={handleInputChange}
-                                            className="h-12 md:h-14 text-sm md:text-base border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-200 hover:border-gray-300"
-                                            placeholder="999 999 999"
-                                            type="tel"
-                                        />
-                                    </div>
-
-                                    {/* Dirección */}
-                                    <div className="space-y-3">
-                                        <Label htmlFor="direccion" className="text-darkblue font-semibold text-sm md:text-base flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-primary" />
-                                            Dirección
-                                        </Label>
-                                        <Input
-                                            id="direccion"
-                                            name="direccion"
-                                            value={formData.direccion}
-                                            onChange={handleInputChange}
-                                            className="h-12 md:h-14 text-sm md:text-base border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-200 hover:border-gray-300"
-                                            placeholder="Av. Principal 123"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Referencia */}
+                                {/* Teléfono */}
                                 <div className="space-y-3">
-                                    <Label htmlFor="referencia" className="text-darkblue font-semibold text-sm md:text-base flex items-center gap-2">
-                                        <MapPinned className="h-4 w-4 text-primary" />
-                                        Referencia
+                                    <Label htmlFor="telefono" className="text-darkblue font-semibold text-sm md:text-base flex items-center gap-2">
+                                        <Phone className="h-4 w-4 text-primary" />
+                                        Teléfono
                                     </Label>
                                     <Input
-                                        id="referencia"
-                                        name="referencia"
-                                        value={formData.referencia}
+                                        id="telefono"
+                                        name="telefono"
+                                        value={formData.telefono}
                                         onChange={handleInputChange}
-                                        className="h-12 md:h-14 text-sm md:text-base border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-200 hover:border-gray-300"
-                                        placeholder="Frente al parque, esquina con..."
+                                        className="h-12 md:h-14 text-sm md:text-base border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-200 hover:border-gray-300 bg-gray-50/50"
+                                        placeholder="999 999 999"
+                                        type="tel"
                                     />
                                 </div>
 
+                                {/* Dirección y Referencia (Ocultos por solicitud) */}
+                                {/* 
+                                <div className="space-y-3">
+                                    <Label htmlFor="direccion">Dirección</Label>
+                                    <Input ... />
+                                </div>
+                                <div className="space-y-3">
+                                    <Label htmlFor="referencia">Referencia</Label>
+                                    <Input ... />
+                                </div>
+                                */}
+
                                 {/* Buttons */}
-                                <div className="pt-4 space-y-3">
+                                <div className="pt-6 space-y-4">
                                     <Button
                                         type="submit"
-                                        className="w-full h-12 md:h-14 bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold text-sm md:text-base rounded-xl shadow-lg hover:shadow-xl"
+                                        className="w-full h-12 md:h-14 bg-primary hover:bg-green-700 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95"
                                         disabled={isSaving}
                                     >
                                         {isSaving ? (
                                             <>
-                                                <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                                                Guardando cambios...
+                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                Guardando...
                                             </>
                                         ) : (
                                             <>
-                                                <Save className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                                <Save className="mr-2 h-5 w-5" />
                                                 Guardar Cambios
                                             </>
                                         )}
@@ -275,9 +266,9 @@ export default function PerfilPage() {
                                         type="button"
                                         onClick={() => setIsLogoutOpen(true)}
                                         variant="outline"
-                                        className="w-full h-12 md:h-14 border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold text-sm md:text-base rounded-xl"
+                                        className="w-full h-12 md:h-14 border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 font-semibold text-base rounded-xl transition-all active:scale-95"
                                     >
-                                        <LogOut className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                        <LogOut className="mr-2 h-5 w-5" />
                                         Cerrar Sesión
                                     </Button>
                                 </div>

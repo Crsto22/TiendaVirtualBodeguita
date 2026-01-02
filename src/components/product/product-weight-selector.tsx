@@ -99,16 +99,16 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
             if (!montoNum) return;
 
             // Si está comprando por MONTO, siempre hay precio definido (el que ingresó el usuario)
-            if (tienePrecionoMostrar) {
-                // Si no tiene precio, solo mostramos el monto
-                detalle = `S/ ${montoNum.toFixed(2)}`;
-            } else {
-                // Si tiene precio, calculamos y mostramos el peso
-                const gramos = Math.round(gramosCalculados);
-                detalle = gramos >= 1000
-                    ? `${(gramos / 1000).toFixed(2)} kg`
-                    : `${gramos} g`;
-            }
+            // Si está comprando por MONTO, la intención principal es el dinero
+            // Por lo tanto, el detalle debe reflejar "S/ 3.00" y no la conversión a gramos
+            detalle = `S/ ${montoNum.toFixed(2)}`;
+
+            // Opcional: Podríamos agregar el peso aprox si hay precio, pero "S/ 3.00" es lo que manda
+            // if (!tienePrecionoMostrar) {
+            //    const gramos = Math.round(gramosCalculados);
+            //    const pesoStr = gramos >= 1000 ? ...
+            //    detalle += ` (~ ${pesoStr})`; 
+            // }
             precioFinal = montoNum;
             mostrarPrecio = true; // Siempre mostrar precio cuando compra por monto
         } else if (activeTab === 'peso') {
@@ -135,7 +135,8 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
 
         const productToAdd = {
             ...product,
-            nombre: `${product.nombre} (${detalle})`,
+            nombre: product.nombre, // Mantenemos el nombre original limpio
+            detalle: detalle, // Guardamos el detalle explícitamente
             precio: precioFinal,
             mostrar_precio_web: mostrarPrecio,
             id: `${product.id}-${Date.now()}`
@@ -149,29 +150,27 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
     const renderContent = () => (
         <div className="flex flex-col h-full">
             <div className="flex-1 space-y-8 py-2">
-                
+
                 {/* Selector de Pestañas Moderno */}
                 <div className="flex p-1.5 bg-slate-100 rounded-2xl mx-auto max-w-sm">
                     {product.tipo_producto_kg === 'granel' && (
                         <>
                             <button
                                 onClick={() => setActiveTab('monto')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
-                                    activeTab === 'monto' 
-                                    ? 'bg-white text-primary shadow-sm shadow-slate-200' 
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === 'monto'
+                                    ? 'bg-white text-primary shadow-sm shadow-slate-200'
                                     : 'text-slate-500 hover:text-slate-700'
-                                }`}
+                                    }`}
                             >
                                 <Coins size={16} />
                                 Monto
                             </button>
                             <button
                                 onClick={() => setActiveTab('peso')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
-                                    activeTab === 'peso' 
-                                    ? 'bg-white text-primary shadow-sm shadow-slate-200' 
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === 'peso'
+                                    ? 'bg-white text-primary shadow-sm shadow-slate-200'
                                     : 'text-slate-500 hover:text-slate-700'
-                                }`}
+                                    }`}
                             >
                                 <Scale size={16} />
                                 Peso
@@ -221,7 +220,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
 
                 {/* Área de Inputs Principal */}
                 <div className="flex flex-col items-center justify-center min-h-[140px]">
-                    
+
                     {/* --- TAB: MONTO --- */}
                     {activeTab === 'monto' && (
                         <div className="w-full max-w-xs space-y-6 animate-in fade-in zoom-in-95 duration-300">
@@ -245,7 +244,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
 
                             {/* Botones Rápidos de Monto */}
                             <div className="grid grid-cols-3 gap-2 px-2">
-                                {[0.50, 1,3].map((valor) => (
+                                {[0.50, 1, 3].map((valor) => (
                                     <button
                                         key={valor}
                                         onClick={() => setMonto(valor.toFixed(2))}
@@ -268,8 +267,8 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                 <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-center">
                                     <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Recibirás aprox.</p>
                                     <div className="text-2xl font-bold text-primary">
-                                        {gramosCalculados >= 1000 
-                                            ? `${(gramosCalculados / 1000).toFixed(2)} kg` 
+                                        {gramosCalculados >= 1000
+                                            ? `${(gramosCalculados / 1000).toFixed(2)} kg`
                                             : `${Math.round(gramosCalculados)} g`}
                                     </div>
                                     <p className="text-xs text-slate-400 mt-1">de {product.nombre.toLowerCase()}</p>
@@ -281,7 +280,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                     {/* --- TAB: PESO --- */}
                     {activeTab === 'peso' && (
                         <div className="w-full space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                             <label className="block text-center text-sm font-medium text-slate-400">
+                            <label className="block text-center text-sm font-medium text-slate-400">
                                 Ingrese el peso deseado
                             </label>
 
@@ -338,7 +337,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                     <p className="text-sm text-center text-slate-600 mb-2">
                                         Pidiendo <span className="font-bold text-slate-800">{peso} {unidadPeso === 'kg' ? (parseFloat(peso) === 1 ? 'kilo' : 'kilos') : 'gramos'}</span>
                                     </p>
-                                    
+
                                     {!tienePrecionoMostrar && precioCalculado > 0 && (
                                         <div className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-slate-100">
                                             <span className="text-xs font-bold text-slate-400 uppercase">Total Estimado</span>
@@ -356,7 +355,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                             <label className="block text-center text-sm font-medium text-slate-400">
                                 Cantidad de unidades
                             </label>
-                            
+
                             <div className="flex items-center justify-center gap-8">
                                 <Button
                                     variant="outline"
@@ -366,11 +365,11 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                 >
                                     <Minus className="size-6" strokeWidth={2.5} />
                                 </Button>
-                                
+
                                 <div className="w-20 md:w-28 text-center">
                                     <span className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-800 tracking-tight">{unidades}</span>
                                 </div>
-                                
+
                                 <Button
                                     variant="outline"
                                     size="icon"
@@ -424,8 +423,8 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent 
-                side="bottom" 
+            <SheetContent
+                side="bottom"
                 className="rounded-t-4xl px-6 pt-8 pb-8 bg-white border-none shadow-[0_-10px_40px_rgba(0,0,0,0.1)]  data-[state=open]:duration-300 data-[state=closed]:duration-200 will-change-transform"
             >
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full" />

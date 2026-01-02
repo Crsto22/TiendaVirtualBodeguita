@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 import { toast } from "sonner";
 
 
@@ -62,7 +63,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             />
             <div className="text-center space-y-2 -mt-5">
                 <p className="text-gray-600">
-                    Inicia sesión para gestionar tus pedidos y direcciones
+                    Inicia sesión para gestionar tus pedidos
                 </p>
             </div>
 
@@ -98,7 +99,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </Button>
 
             <p className="text-xs text-center text-gray-500 px-4">
-                Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad.
+                Al continuar, aceptas nuestros <Link href="/terminos" className="underline hover:text-primary transition-colors" onClick={onClose}>Términos de Servicio</Link> y <Link href="/privacidad" className="underline hover:text-primary transition-colors" onClick={onClose}>Política de Privacidad</Link>.
             </p>
         </div>
     );
