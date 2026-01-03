@@ -207,7 +207,8 @@ export default function OrderDetailPage() {
           if (sub) currentTotal += (Number(sub.precio_base) * qty);
         });
       } else {
-        const pFinal = i.precio_final !== undefined && i.precio_final !== null ? i.precio_final : (Number(i.precio_base) * Number(i.cantidad_solicitada));
+        const unitPrice = (i.precio_helada && i.cantidad_helada > 0) ? Number(i.precio_helada) : Number(i.precio_base);
+        const pFinal = i.precio_final !== undefined && i.precio_final !== null ? i.precio_final : (unitPrice * Number(i.cantidad_solicitada));
         currentTotal += (Number(pFinal) || 0);
       }
     });

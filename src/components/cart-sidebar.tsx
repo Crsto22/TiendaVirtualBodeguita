@@ -593,11 +593,27 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
               )}
             </div>
 
+            {/* Validación Monto Mínimo - Solo si NO hay productos por consultar */}
+            {!items.some(i => i.mostrar_precio_web === false) && calculateCartTotal(items) > 0 && calculateCartTotal(items) < 1.00 && (
+              <div className="mb-4 relative overflow-hidden bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary" />
+                <div className="bg-secondary/10 p-2 rounded-full shrink-0">
+                  <Info className="size-5 text-secondary" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-darkblue">Monto mínimo no alcanzado</p>
+                  <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                    El pedido mínimo para productos con precio es S/ 1.00
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col gap-3">
               <Button
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold h-12 rounded-xl shadow-lg shadow-slate-200 transition-all hover:-translate-y-px active:translate-y-px disabled:bg-gray-300 disabled:shadow-none disabled:text-gray-500"
                 onClick={handleContinuar}
-                disabled={!hacerPedidos}
+                disabled={!hacerPedidos || (!items.some(i => i.mostrar_precio_web === false) && calculateCartTotal(items) > 0 && calculateCartTotal(items) < 1.00)}
               >
                 <span className="flex items-center justify-center gap-2">
                   Continuar

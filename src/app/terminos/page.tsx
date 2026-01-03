@@ -28,22 +28,34 @@ export default function TerminosPage() {
                                 Para retirar tu pedido, el pago debe ser completado en su totalidad mediante:
                                 <ul className="list-disc pl-5 mt-2 space-y-1">
                                     <li><strong>Efectivo:</strong> Pago contra entrega exacto o con vuelto confirmado.</li>
-                                    <li><strong>Billetera Digital (Yape/Plin):</strong> Transferencia inmediata al momento del recojo.</li>
+                                    <li><strong>Billetera Digital (Yape):</strong> Transferencia inmediata al momento del recojo.</li>
                                 </ul>
                                 Sin el pago completo, no se procederá a la entrega de la mercadería.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">3. Precios</h2>
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">3. Precios y Montos Mínimos</h2>
                             <p>
-                                Los precios mostrados en la plataforma son <strong>precios finales</strong>.
-                                El monto que ves en tu "Total a Pagar" es exactamente lo que abonarás al recoger (salvo ajustes por peso en productos frescos como pollo/carne, que se confirmarán en el local).
+                                Los precios mostrados en la plataforma son referenciales. El monto final se confirmará al momento del pago.
+                                <br />
+                                <strong>Pedido Mínimo:</strong> Para pedidos que contienen exclusivamente productos con precio fijo, el monto mínimo de compra es de <strong>S/ 1.00</strong>.
+                                <br />
+                                esta restricción no aplica si tu carrito incluye productos "Por Consultar" (peso variable o stock por confirmar).
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">4. Tiempo de Recojo</h2>
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">4. Venta por Peso</h2>
+                            <p>
+                                Para productos vendidos a granel (frutas, verduras, carnes, etc.), el <strong>peso mínimo de compra es de 100 gramos (0.1 kg)</strong>.
+                                <br />
+                                El precio final de estos productos puede variar ligeramente según el peso exacto pesado en balanza al momento de preparar tu pedido.
+                            </p>
+                        </section>
+
+                        <section>
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">5. Tiempo de Recojo</h2>
                             <p>
                                 Tu pedido se mantendrá reservado por un máximo de <strong>3 horas</strong> desde la confirmación.
                                 Si no se recoge y paga en ese lapso, el pedido será anulado y los productos regresarán a la venta.
@@ -51,7 +63,7 @@ export default function TerminosPage() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">5. Productos Retornables</h2>
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">6. Productos Retornables</h2>
                             <p>
                                 Si llevas bebidas retornables, se requiere entregar el envase vacío al recoger.
                                 <br />

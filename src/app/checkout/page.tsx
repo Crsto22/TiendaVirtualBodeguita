@@ -203,7 +203,7 @@ export default function CheckoutPage() {
           {user && (
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-slate-600 hidden sm:block">
-                Hola, {user.nombre?.split(' ')[0]}
+              {user.nombre?.split(' ')[0]}
               </span>
               <div className="size-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden relative">
                 {user.foto_url ? (

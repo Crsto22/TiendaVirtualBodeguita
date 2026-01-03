@@ -331,6 +331,14 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                 ))}
                             </div>
 
+
+                            {/* Mensaje de Error Peso */}
+                            {peso && ((unidadPeso === 'g' && parseFloat(peso) < 100) || (unidadPeso === 'kg' && parseFloat(peso) < 0.1)) && (
+                                <div className="bg-red-50 text-red-500 text-xs font-medium py-2 px-4 rounded-full text-center mx-auto w-fit mb-4">
+                                    Mínimo {unidadPeso === 'g' ? '100 g' : '0.1 kg'}
+                                </div>
+                            )}
+
                             {/* Feedback Message */}
                             {peso && parseFloat(peso) > 0 && (
                                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
@@ -392,7 +400,7 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                         onClick={handleAddToCart}
                         disabled={
                             (activeTab === 'monto' && (!parseFloat(monto) || parseFloat(monto) < 0.50)) ||
-                            (activeTab === 'peso' && !parseFloat(peso))
+                            (activeTab === 'peso' && (!parseFloat(peso) || (unidadPeso === 'g' ? parseFloat(peso) < 100 : parseFloat(peso) < 0.1)))
                         }
                     >
                         <div className="flex items-center gap-2">

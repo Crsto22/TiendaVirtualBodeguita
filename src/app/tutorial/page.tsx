@@ -51,7 +51,7 @@ export default function TutorialPage() {
         {
             id: 4,
             title: "Elige Cómo Pagar",
-            description: "Selecciona **Efectivo** o **Yape/Plin**. ¡Tranquilo! No pagas nada en la web, todo es al recoger.",
+            description: "Selecciona **Efectivo** o **Yape**. ¡Tranquilo! No pagas nada en la web, todo es al recoger.",
             icon: Wallet,
             color: "bg-purple-100 text-purple-600",
             imageSrc: "/Tutorial/4.png"

@@ -74,10 +74,13 @@ export function OrderItem({
             return;
         }
 
-        const unitPrice = item.precio_base || 0;
+        const effectiveUnitPrice = (item.precio_helada && item.cantidad_helada > 0)
+            ? item.precio_helada
+            : (item.precio_base || 0);
+
         const updates: Partial<IOrderItem> = {
             cantidad_final: newQty,
-            precio_final: unitPrice * newQty,
+            precio_final: effectiveUnitPrice * newQty,
         };
 
         // Include stock_disponible update if partial stock and not set
@@ -256,7 +259,7 @@ export function OrderItem({
                                                 {item.mostrar_precio_web !== false ||
                                                     item.is_recovered_price ||
                                                     (item.precio_final && item.precio_final > 0)
-                                                    ? `S/ ${(item.precio_base || 0).toFixed(2)} c/u`
+                                                    ? `S/ ${((item.precio_helada && item.cantidad_helada > 0) ? item.precio_helada : (item.precio_base || 0)).toFixed(2)} c/u`
                                                     : ""}
                                             </span>
                                         )}
@@ -280,7 +283,8 @@ export function OrderItem({
 
                                         {/* Precio Final */}
                                         {(() => {
-                                            const precioTotal = item.precio_final ?? (item.precio_base || 0) * currentQty;
+                                            const effectiveUnitPrice = (item.precio_helada && item.cantidad_helada > 0) ? item.precio_helada : (item.precio_base || 0);
+                                            const precioTotal = item.precio_final ?? (effectiveUnitPrice * currentQty);
 
                                             // Si el precio es 0, mostrar "Consultar"
                                             if (precioTotal === 0) {

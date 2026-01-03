@@ -68,9 +68,9 @@ function CategoryCarousel({ category }: { category: Category }) {
   const isNewProductsSection = category.categoria_id === 'nuevos';
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl md:text-2xl font-bold text-darkblue">
+    <div className={`mb-8 ${isNewProductsSection ? 'bg-darkblue rounded-2xl p-4 shadow-sm   ' : ''}`}>
+      <div className={`flex items-center mb-4 ${isNewProductsSection ? 'justify-center' : 'justify-between'}`}>
+        <h3 className={`text-xl md:text-2xl font-bold ${isNewProductsSection ? 'text-white' : 'text-darkblue'}`}>
           {category.categoria_nombre}
         </h3>
         {!isNewProductsSection && (
