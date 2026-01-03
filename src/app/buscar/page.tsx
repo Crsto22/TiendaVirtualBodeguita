@@ -70,14 +70,14 @@ export default function BuscarPage() {
       // Eliminar duplicados y agregar al inicio
       const filtered = prev.filter(s => s.toLowerCase() !== trimmedQuery.toLowerCase());
       const updated = [trimmedQuery, ...filtered].slice(0, MAX_RECENT_SEARCHES);
-      
+
       // Guardar en localStorage
       try {
         localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
       } catch (err) {
         console.error('Error al guardar búsqueda:', err);
       }
-      
+
       return updated;
     });
   }, []);
@@ -108,7 +108,7 @@ export default function BuscarPage() {
   // Función de búsqueda
   const performSearch = useCallback(async (query: string) => {
     const trimmedQuery = query.trim();
-    
+
     // Limpiar resultados si no hay query
     if (!trimmedQuery) {
       setResults([]);
@@ -132,11 +132,11 @@ export default function BuscarPage() {
 
     try {
       const response = await searchProducts(trimmedQuery);
-      
+
       if (response.success) {
         setResults(response.data);
         setTotalResults(response.total);
-        
+
         // Guardar en historial automáticamente si hay resultados
         if (response.data.length > 0) {
           saveToRecentSearches(trimmedQuery);
@@ -194,11 +194,11 @@ export default function BuscarPage() {
       <MobileDock />
 
       {/* Modern Sticky Search Header */}
-      <section 
+      <section
         className={cn(
           "sticky top-14 md:top-0 z-40 transition-all duration-300 border-b",
-          isScrolled 
-            ? "bg-white/80 backdrop-blur-md shadow-sm border-gray-200/60" 
+          isScrolled
+            ? "bg-white/95 shadow-sm border-gray-200"
             : "bg-white border-transparent"
         )}
       >
@@ -207,7 +207,7 @@ export default function BuscarPage() {
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
               <Search className={cn(
                 "size-5 transition-colors duration-300",
-                isTyping ? "text-primary animate-pulse" : "text-gray-400 group-focus-within:text-primary"
+                isTyping ? "text-primary" : "text-gray-400 group-focus-within:text-primary"
               )} />
             </div>
             <input
@@ -215,7 +215,7 @@ export default function BuscarPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="¿Qué estás buscando hoy?"
-              className="w-full pl-12 pr-12 py-3.5 md:py-4 text-base md:text-lg bg-gray-100/50 border-2 border-transparent rounded-2xl focus:bg-white focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all duration-300 placeholder:text-gray-400 text-darkblue font-medium"
+              className="w-full pl-12 pr-12 py-3.5 md:py-4 text-base md:text-lg bg-gray-100 border-2 border-transparent rounded-2xl focus:bg-white focus:outline-none focus:border-primary/50 text-darkblue font-medium"
               autoFocus
             />
             {searchQuery && (
@@ -233,17 +233,17 @@ export default function BuscarPage() {
       </section>
 
       <main className="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
-        
+
         {/* Sección: Búsquedas Recientes */}
         {recentSearches.length > 0 && !searchQuery && (
-          <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <section className="mb-10">
             <div className="flex items-center justify-between mb-4 px-1">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <History className="size-4" />
                 Recientes
               </h2>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={clearRecentSearches}
                 className="text-xs text-primary hover:text-primary/80 hover:bg-primary/5 h-8 px-3 rounded-full transition-colors"
@@ -251,12 +251,12 @@ export default function BuscarPage() {
                 Borrar historial
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap gap-2.5">
               {recentSearches.map((search, index) => (
                 <div
                   key={index}
-                  className="group flex items-center bg-white hover:bg-white border border-gray-200 hover:border-primary/40 rounded-xl shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden"
+                  className="group flex items-center bg-white hover:bg-white border border-gray-200 rounded-xl shadow-xs cursor-pointer overflow-hidden"
                 >
                   <button
                     onClick={() => handleRecentSearchClick(search)}
@@ -283,9 +283,9 @@ export default function BuscarPage() {
 
         {/* Sección: Estado vacío inicial (Sin historial ni búsqueda) */}
         {recentSearches.length === 0 && !searchQuery && (
-          <section className="flex flex-col items-center justify-center py-20 text-center animate-in zoom-in-95 duration-500">
+          <section className="flex flex-col items-center justify-center py-20 text-center">
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-primary/5 rounded-full blur-2xl transform scale-150"></div>
+              <div className="absolute inset-0 bg-primary/5 rounded-full"></div>
               <div className="relative bg-white p-6 rounded-full shadow-lg border border-gray-100">
                 <Search className="size-12 text-primary/80" />
               </div>
@@ -302,12 +302,12 @@ export default function BuscarPage() {
         {/* Sección: Resultados y Estados de Búsqueda */}
         {searchQuery && (
           <section className="space-y-6">
-            
+
             {/* Header de Resultados */}
             <div className="flex items-center justify-between px-1">
               <h2 className="text-lg md:text-xl font-bold text-darkblue truncate pr-4">
                 {isTyping ? (
-                  <span className="text-gray-400 animate-pulse">Buscando...</span>
+                  <span className="text-gray-400">Buscando...</span>
                 ) : (
                   <>Resultados para <span className="text-primary">"{searchQuery}"</span></>
                 )}
@@ -324,7 +324,7 @@ export default function BuscarPage() {
               // Modern Skeleton Loader
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4 items-start animate-pulse">
+                  <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4 items-start">
                     <div className="w-24 h-24 rounded-xl bg-gray-200 shrink-0"></div>
                     <div className="flex-1 space-y-3 py-1">
                       <div className="flex gap-2">
@@ -346,8 +346,8 @@ export default function BuscarPage() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Algo salió mal</h3>
                 <p className="text-gray-600 mb-2">{error}</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => performSearch(searchQuery)}
                   className="mt-4 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                 >
@@ -362,7 +362,7 @@ export default function BuscarPage() {
                 </div>
                 <h3 className="text-lg font-bold text-darkblue mb-2">Sigue escribiendo...</h3>
                 <p className="text-gray-500 text-sm">
-                  Necesitamos al menos 3 caracteres para buscar. 
+                  Necesitamos al menos 3 caracteres para buscar.
                   <span className="block mt-1 font-medium text-primary">
                     Faltan {3 - searchQuery.trim().length}
                   </span>
@@ -378,7 +378,7 @@ export default function BuscarPage() {
                   Sin resultados
                 </h3>
                 <p className="text-gray-500 mb-8 max-w-xs mx-auto">
-                  No encontramos productos que coincidan con "{searchQuery}". 
+                  No encontramos productos que coincidan con "{searchQuery}".
                   Intenta usar términos más generales.
                 </p>
                 <Link href="/categorias">
@@ -394,19 +394,18 @@ export default function BuscarPage() {
                   <Link
                     key={product.id}
                     href={`/productos/${product.producto_web}`}
-                    className="group bg-white rounded-2xl border border-gray-100 p-4 flex gap-4 items-start transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:border-primary/20 hover:-translate-y-1 relative overflow-hidden"
+                    className="group bg-white rounded-2xl border border-gray-100 p-4 flex gap-4 items-start relative overflow-hidden"
                   >
-                    {/* Hover Effect Background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
 
                     {/* Image Container */}
                     <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 group-hover:border-primary/20 transition-colors">
                       {product.imagen ? (
-                        <Image 
-                          src={product.imagen} 
-                          alt={product.nombre} 
-                          fill 
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        <Image
+                          src={product.imagen}
+                          alt={product.nombre}
+                          fill
+                          className="object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -432,12 +431,12 @@ export default function BuscarPage() {
                             </span>
                           )}
                         </div>
-                        
+
                         {/* Product Title */}
                         <h3 className="font-bold text-sm md:text-base text-gray-800 leading-snug group-hover:text-primary transition-colors line-clamp-2 mb-1">
                           {capitalizeText(product.nombre)}
                         </h3>
-                        
+
                         {/* Unit Info */}
                         <p className="text-xs text-gray-400 font-medium">
                           {product.tipo_unidad === 'kilogramo' ? 'Precio por kilogramo' : 'Precio por unidad'}
@@ -460,9 +459,9 @@ export default function BuscarPage() {
                             </>
                           )}
                         </div>
-                        
+
                         {/* Action Icon (Visual only) */}
-                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all duration-300 transform group-hover:rotate-[-15deg]">
+                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white">
                           <ArrowRight className="size-4" />
                         </div>
                       </div>

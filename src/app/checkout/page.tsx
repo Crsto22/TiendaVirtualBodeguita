@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowLeft,
   ShoppingCart,
@@ -187,6 +188,15 @@ export default function CheckoutPage() {
             >
               <ArrowLeft className="size-5 text-slate-800" />
             </button>
+            <Link href="/inicio" className="relative size-8 rounded-full overflow-hidden shrink-0 hover:opacity-80 transition-opacity">
+              <Image
+                src="/Logo.png"
+                alt="Bodeguita Logo"
+                fill
+                className="object-cover"
+                priority
+              />
+            </Link>
             <h1 className="text-lg font-bold text-slate-800 tracking-tight">Finalizar Compra</h1>
           </div>
 

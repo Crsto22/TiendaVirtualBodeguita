@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -211,8 +212,8 @@ function CategoryCarousel({ category }: { category: Category }) {
                                 }}
                                 disabled={product.stock === 0}
                                 className={`text-white size-6 sm:size-7 rounded-full flex items-center justify-center transition-colors ${product.stock === 0
-                                    ? "bg-gray-300 cursor-not-allowed"
-                                    : "bg-amber-500 hover:bg-amber-600"
+                                  ? "bg-gray-300 cursor-not-allowed"
+                                  : "bg-amber-500 hover:bg-amber-600"
                                   }`}
                               >
                                 <Plus className="size-3 sm:size-3.5" />
@@ -279,11 +280,9 @@ function CategoryCarousel({ category }: { category: Category }) {
   );
 }
 
-// Fetcher function para SWR
-const fetcher = async () => {
-  const response = await getProductsClient();
-
-  // Extraer productos nuevos defensivamente: puede venir como array o como { total, productos }
+// Función auxiliar para transformar la respuesta de la API
+export function transformProductsResponse(response: any) {
+  // Extraer productos nuevos defensivamente
   let productosNuevos: Product[] | undefined = undefined;
   if (Array.isArray(response.productos_nuevos)) {
     productosNuevos = response.productos_nuevos as Product[];
@@ -292,17 +291,33 @@ const fetcher = async () => {
   }
 
   // Filtrar categorías que tienen productos y tomar solo las primeras 5
-  const categorias = response.data
-    .filter(category => category.productos && category.productos.length > 0)
+  // Verificamos si response.data es array
+  const dataArray = Array.isArray(response.data) ? response.data : [];
+
+  const categorias = dataArray
+    .filter((category: Category) => category.productos && category.productos.length > 0)
     .slice(0, 5);
 
   return {
     categorias,
     productosNuevos,
   };
+}
+
+// Fetcher function para SWR
+const fetcher = async () => {
+  const response = await getProductsClient();
+  return transformProductsResponse(response);
 };
 
-export function ProductsSection() {
+interface ProductsSectionProps {
+  initialData?: any; // Type as ApiResponse but we'll transform it before passing to SWR if needed, or expects transformed
+}
+
+export function ProductsSection({ initialData }: ProductsSectionProps) {
+  // Si recibimos initialData (desde SSR), lo transformamos para usarlo como fallback
+  const fallbackData = initialData ? transformProductsResponse(initialData) : undefined;
+
   // SWR con cache automático
   const { data, error, isLoading } = useSWR<{
     categorias: Category[];
@@ -311,6 +326,7 @@ export function ProductsSection() {
     'home-products', // Key única para este dato
     fetcher,
     {
+      fallbackData, // Datos iniciales del servidor
       revalidateOnFocus: false, // No revalidar al cambiar de tab
       revalidateOnReconnect: true, // Revalidar al reconectar internet
       dedupingInterval: 60000, // Deduplicar requests por 1 minuto
@@ -379,15 +395,6 @@ export function ProductsSection() {
         {categorias?.map((category) => (
           <CategoryCarousel key={category.categoria_id} category={category} />
         ))}
-
-        {/* Mobile View All Button */}
-        <div className="mt-6 md:hidden flex justify-center">
-          <Link href="/coleccion/todas">
-            <Button className="bg-primary hover:bg-primary/90 text-white w-full">
-              Ver todas las categorías
-            </Button>
-          </Link>
-        </div>
       </div>
     </section>
   );

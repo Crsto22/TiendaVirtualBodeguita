@@ -5,8 +5,16 @@ import { CategoriesSection } from "@/components/inicio/categories-section";
 import { ProductsSection } from "@/components/product/products-section";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getProducts } from "@/lib/api";
 
-export default function InicioPage() {
+export default async function InicioPage() {
+  // Fetch de productos en el servidor (SSR)
+  // Esto hace que la página cargue con los datos ya listos, eliminando el lag inicial
+  const productsData = await getProducts().catch((err) => {
+    console.error("Error fetching initial products:", err);
+    return undefined;
+  });
+
   // Imágenes de publicidad - Reemplaza estas URLs con tus imágenes reales
   const publicidades = [
     {
@@ -14,11 +22,11 @@ export default function InicioPage() {
       mobileSrc: "/Carousel/baner1-movil.png",
       alt: "Gran Inauguración Online"
     },
-    // Placeholder para cuando tengas más banners
     {
-      desktopSrc: "/Carousel/baner1.png",
-      mobileSrc: "/Carousel/baner1-movil.png",
-      alt: "Ofertas de Lanzamiento"
+      desktopSrc: "/Carousel/baner2.png",
+      mobileSrc: "/Carousel/baner2-movil.png",
+      alt: "Aprende a comprar paso a paso",
+      href: "/tutorial"
     },
   ];
 
@@ -34,7 +42,7 @@ export default function InicioPage() {
       <CategoriesSection />
 
       {/* Products Section */}
-      <ProductsSection />
+      <ProductsSection initialData={productsData} />
     </div>
   );
 }

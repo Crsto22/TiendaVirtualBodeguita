@@ -4,12 +4,14 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface HeroCarouselProps {
   images: {
     desktopSrc: string;
     mobileSrc: string;
     alt: string;
+    href?: string;
   }[];
 }
 
@@ -55,31 +57,45 @@ export function HeroCarousel({ images }: HeroCarouselProps) {
       {/* Carousel */}
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex">
-          {images.map((image, index) => (
-            <div key={index} className="flex-[0_0_100%] min-w-0">
-              {/* Contenedor Mobile (Visible solo en móvil) */}
-              <div className="relative w-full aspect-[4/3] md:hidden">
-                <Image
-                  src={image.mobileSrc}
-                  alt={image.alt}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
-              </div>
+          {images.map((image, index) => {
+            const content = (
+              <>
+                {/* Contenedor Mobile (Visible solo en móvil) */}
+                <div className="relative w-full aspect-[4/3] md:hidden">
+                  <Image
+                    src={image.mobileSrc}
+                    alt={image.alt}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                  />
+                </div>
 
-              {/* Contenedor Desktop (Visible solo en tablet/desktop) */}
-              <div className="relative w-full hidden md:block aspect-[1920/500]">
-                <Image
-                  src={image.desktopSrc}
-                  alt={image.alt}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
+                {/* Contenedor Desktop (Visible solo en tablet/desktop) */}
+                <div className="relative w-full hidden md:block aspect-[1920/500]">
+                  <Image
+                    src={image.desktopSrc}
+                    alt={image.alt}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                  />
+                </div>
+              </>
+            );
+
+            return (
+              <div key={index} className="flex-[0_0_100%] min-w-0">
+                {image.href ? (
+                  <Link href={image.href} className="block w-full h-full cursor-pointer">
+                    {content}
+                  </Link>
+                ) : (
+                  content
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

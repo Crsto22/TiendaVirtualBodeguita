@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -513,15 +514,28 @@ export default function OrderDetailPage() {
       {/* Header Sticky con efecto blur */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/inicio")}
-            className="rounded-full hover:bg-gray-100 -ml-2 text-gray-600"
-            size="sm"
-          >
-            <ArrowLeft className="size-5 mr-1" />
-            <span className="hidden sm:inline">Volver</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/inicio")}
+              className="rounded-full hover:bg-gray-100 -ml-2 text-gray-600"
+              size="sm"
+            >
+              <ArrowLeft className="size-5 mr-1" />
+              <span className="hidden sm:inline">Volver</span>
+            </Button>
+
+            <Link href="/inicio" className="relative size-9 rounded-full overflow-hidden shrink-0 hover:opacity-80 transition-opacity">
+              <Image
+                src="/Logo.png"
+                alt="Bodeguita Logo"
+                fill
+                className="object-cover"
+                priority
+              />
+            </Link>
+          </div>
+
           <div className="flex flex-col items-end sm:items-center">
             <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Orden #</span>
             <span className="text-sm font-bold text-gray-900 font-mono">{order.numeroOrden}</span>
