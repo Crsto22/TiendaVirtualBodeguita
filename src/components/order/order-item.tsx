@@ -264,23 +264,6 @@ export function OrderItem({
                                             </span>
                                         )}
 
-                                        {/* Precio Anterior Tachado (si aplica) */}
-                                        {item.precio_final !== undefined &&
-                                            item.precio_final !== null &&
-                                            item.precio_base !== null &&
-                                            item.mostrar_precio_web &&
-                                            Math.abs(
-                                                (item.precio_final || 0) -
-                                                (item.precio_base || 0) * currentQty
-                                            ) > 0.01 && (
-                                                <span className="text-xs text-orange-500 block line-through opacity-70">
-                                                    S/{" "}
-                                                    {(
-                                                        item.precio_base * item.cantidad_solicitada
-                                                    ).toFixed(2)}
-                                                </span>
-                                            )}
-
                                         {/* Precio Final */}
                                         {(() => {
                                             const effectiveUnitPrice = (item.precio_helada && item.cantidad_helada > 0) ? item.precio_helada : (item.precio_base || 0);

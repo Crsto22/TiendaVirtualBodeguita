@@ -6,6 +6,28 @@ import { ProductsSection } from "@/components/product/products-section";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getProducts } from "@/lib/api";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Inicio - Vanesa Bodeguita | Tu bodega de confianza online",
+  description: "Compra productos frescos y de calidad en Vanesa Bodeguita. Abarrotes, bebidas, snacks y más. Reserva online y recoge en tienda. ¡Descubre nuestras ofertas!",
+  keywords: ["bodega online", "abarrotes", "productos frescos", "compras online", "bodega Lima", "snacks", "bebidas", "comida"],
+  openGraph: {
+    title: "Vanesa Bodeguita - Tu bodega de confianza",
+    description: "Compra productos frescos y de calidad. Reserva online y recoge en tienda.",
+    type: "website",
+    locale: "es_PE",
+    siteName: "Vanesa Bodeguita",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vanesa Bodeguita - Tu bodega de confianza",
+    description: "Compra productos frescos y de calidad. Reserva online y recoge en tienda.",
+  },
+  alternates: {
+    canonical: "/inicio",
+  },
+};
 
 export default async function InicioPage() {
   // Fetch de productos en el servidor (SSR)

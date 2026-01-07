@@ -1,5 +1,18 @@
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Términos de Servicio - Vanesa Bodeguita",
+  description: "Lee los términos y condiciones de servicio de Vanesa Bodeguita. Modalidad de compra, pagos y políticas de la tienda.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "/terminos",
+  },
+};
 
 export default function TerminosPage() {
     return (

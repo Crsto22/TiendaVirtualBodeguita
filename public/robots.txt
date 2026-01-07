@@ -1,0 +1,24 @@
+# robots.txt para Vanesa Bodeguita
+# Permite que los motores de búsqueda indexen todo el sitio
+
+User-agent: *
+Allow: /
+
+# Bloquear rutas innecesarias o privadas
+Disallow: /api/
+Disallow: /perfil/
+Disallow: /checkout/
+Disallow: /pedidos/
+
+# Permitir específicamente páginas importantes
+Allow: /inicio
+Allow: /categorias
+Allow: /coleccion/
+Allow: /productos/
+Allow: /tutorial
+Allow: /privacidad
+Allow: /terminos
+Allow: /buscar
+
+# Sitemap
+Sitemap: https://www.vanesabodeguita.com/sitemap.xml

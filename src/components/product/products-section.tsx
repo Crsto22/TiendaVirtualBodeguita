@@ -68,17 +68,33 @@ function CategoryCarousel({ category }: { category: Category }) {
   const isNewProductsSection = category.categoria_id === 'nuevos';
 
   return (
-    <div className={`mb-8 ${isNewProductsSection ? 'bg-darkblue rounded-2xl p-4 shadow-sm   ' : ''}`}>
-      <div className={`flex items-center mb-4 ${isNewProductsSection ? 'justify-center' : 'justify-between'}`}>
-        <h3 className={`text-xl md:text-2xl font-bold ${isNewProductsSection ? 'text-white' : 'text-darkblue'}`}>
-          {category.categoria_nombre}
-        </h3>
-        {!isNewProductsSection && (
-          <Link href={`/coleccion/${encodeURIComponent(categorySlug)}`}>
-            <Button variant="ghost" className="text-primary hover:text-primary/80 text-sm">
-              Ver más →
-            </Button>
-          </Link>
+    <div className={`mb-8 ${isNewProductsSection ? 'bg-gradient-to-br from-darkblue to-primary rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden' : ''}`}>
+      {/* Efectos decorativos para productos nuevos */}
+      {isNewProductsSection && (
+        <>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+        </>
+      )}
+      
+      <div className={`flex items-center mb-4 ${isNewProductsSection ? 'justify-center relative' : 'justify-between'}`}>
+        {isNewProductsSection ? (
+          <div className="text-center">
+            <h3 className="text-2xl md:text-4xl font-black text-white drop-shadow-lg">
+              {category.categoria_nombre}
+            </h3>
+          </div>
+        ) : (
+          <>
+            <h3 className="text-xl md:text-2xl font-bold text-darkblue">
+              {category.categoria_nombre}
+            </h3>
+            <Link href={`/coleccion/${encodeURIComponent(categorySlug)}`}>
+              <Button variant="ghost" className="text-primary hover:text-primary/80 text-sm">
+                Ver más →
+              </Button>
+            </Link>
+          </>
         )}
       </div>
 

@@ -231,7 +231,44 @@ export default function CheckoutPage() {
           <div className="lg:col-span-7 space-y-6 order-2 lg:order-1">
 
             {/* Sección de Entrega (Visualmente mejorada) */}
-            <section className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100/50">
+            <section className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100/50 space-y-4">
+              
+              {/* Información del Cliente */}
+              {user && (
+                <div className="pb-4 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Pedido a nombre de:</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="size-12 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden relative shrink-0">
+                        {user.foto_url ? (
+                          <Image
+                            src={user.foto_url}
+                            alt={user.nombre || "Usuario"}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-primary font-bold bg-primary/10 text-lg">
+                            {user.nombre?.charAt(0) || "U"}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{user.nombre || "Cliente"}</p>
+                        <p className="text-xs text-slate-500">{user.telefono || user.email}</p>
+                      </div>
+                    </div>
+                    <Link 
+                      href="/perfil"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      Editar
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Método de Entrega */}
               <div className="flex items-start gap-4">
                 <div className="bg-blue-50 p-3 rounded-2xl shrink-0">
                   <Store className="size-6 text-blue-600" />

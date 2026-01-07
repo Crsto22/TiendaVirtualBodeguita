@@ -196,7 +196,7 @@ export default function OrderDetailPage() {
         const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === i.itemId);
         Object.entries(selections).forEach(([subId, qty]) => {
           const sub = subs.find(s => s.itemId === subId);
-          if (sub) currentTotal += (Number(sub.precio_base) * qty);
+          if (sub) currentTotal += (Number(sub.precio_final) || 0);
         });
       } else if (i.estado_item === "sin_stock") {
         // Solo sustitutos
@@ -204,7 +204,7 @@ export default function OrderDetailPage() {
         const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === i.itemId);
         Object.entries(selections).forEach(([subId, qty]) => {
           const sub = subs.find(s => s.itemId === subId);
-          if (sub) currentTotal += (Number(sub.precio_base) * qty);
+          if (sub) currentTotal += (Number(sub.precio_final) || 0);
         });
       } else {
         const unitPrice = (i.precio_helada && i.cantidad_helada > 0) ? Number(i.precio_helada) : Number(i.precio_base);
@@ -359,7 +359,7 @@ export default function OrderDetailPage() {
                   // Si es el primer sustituto, podríamos heredar el ID para mantener traza, pero mejor IDs nuevos limpios
                   itemId: index === 0 ? item.itemId : `sub-${item.itemId}-${Date.now()}-${index}`,
                   cantidad_solicitada: finalQty,
-                  precio_final: (Number(subItem.precio_base) || 0) * finalQty, // USAMOS PRECIO BASE
+                  precio_final: Number(subItem.precio_final) || 0, // USAMOS PRECIO FINAL que ya incluye el total
                   es_sustituto: false,
                   sustituye_a: undefined,
                 };
@@ -393,7 +393,7 @@ export default function OrderDetailPage() {
                 ...subItem,
                 itemId: `sub-${item.itemId}-${Date.now()}-${subID}`,
                 cantidad_solicitada: finalQty,
-                precio_final: (Number(subItem.precio_base) || 0) * finalQty, // USAMOS PRECIO BASE
+                precio_final: Number(subItem.precio_final) || 0, // USAMOS PRECIO FINAL que ya incluye el total
                 es_sustituto: false,
                 sustituye_a: undefined,
               };
@@ -481,15 +481,32 @@ export default function OrderDetailPage() {
   }
 
   if (error || !order) {
+    // Determinar el mensaje según el tipo de error
+    let errorMessage = "No pudimos cargar la información solicitada.";
+    if (error === "Pedido no encontrado" || error === "ID de pedido no válido") {
+      errorMessage = "El pedido fue eliminado.";
+    } else if (error === "Error al cargar el pedido") {
+      errorMessage = "Es posible que el vendedor haya eliminado tu pedido.";
+    }
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center border border-gray-100">
-          <div className="size-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <XCircle className="size-10 text-red-500" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 px-6">
+        <div className="w-full max-w-sm sm:max-w-md text-center">
+          <div className="relative w-48 h-48 sm:w-56 sm:h-56 mx-auto mb-6">
+            <Image
+              src="/Pedidos/PedidoCancelado.png"
+              alt="Pedido no encontrado"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{error || "Error"}</h2>
-          <p className="text-gray-500 mb-8">No pudimos cargar la información solicitada.</p>
-          <Button onClick={() => router.push("/inicio")} className="w-full rounded-full h-12 text-base">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">{error || "Error"}</h2>
+          <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">{errorMessage}</p>
+          <Button 
+            onClick={() => router.push("/inicio")} 
+            className="w-full max-w-xs mx-auto rounded-full h-12 text-base font-semibold"
+          >
             <ArrowLeft className="size-4 mr-2" />
             Volver al Inicio
           </Button>
@@ -1065,11 +1082,11 @@ export default function OrderDetailPage() {
             {canCancelOrder && (
               <Button
                 variant="outline"
-                size="icon"
                 onClick={() => setShowCancelModal(true)}
-                className="size-12 rounded-xl border-red-100 text-red-500 bg-red-50 hover:bg-red-100 hover:border-red-200 shrink-0"
+                className="px-3 sm:px-4 h-9 rounded-xl border-red-100 text-white bg-red-500 hover:bg-red-100 hover:border-red-200 shrink-0 text-sm font-medium"
               >
-                <XCircle className="size-6" />
+                <XCircle className="size-4 sm:size-5" />
+                <span className="ml-1">Cancelar</span>
               </Button>
             )}
 

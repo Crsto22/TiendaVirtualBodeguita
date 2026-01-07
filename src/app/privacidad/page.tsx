@@ -1,5 +1,18 @@
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Política de Privacidad - Vanesa Bodeguita",
+  description: "Conoce cómo protegemos tu información personal en Vanesa Bodeguita. Política de privacidad y uso de datos.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "/privacidad",
+  },
+};
 
 export default function PrivacidadPage() {
     return (

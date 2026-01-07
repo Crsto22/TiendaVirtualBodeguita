@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import { Button } from "@/components/ui/button";
 import { PhoneMockup } from "@/components/ui/phone-mockup";
+import Head from "next/head";
 import {
     Search,
     ShoppingCart,

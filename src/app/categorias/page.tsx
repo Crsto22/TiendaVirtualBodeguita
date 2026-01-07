@@ -3,6 +3,21 @@ import { MobileDock } from "@/components/mobile-dock";
 import Link from "next/link";
 import Image from "next/image";
 import { categories } from "@/data/categories";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Categorías - Vanesa Bodeguita | Explora todos nuestros productos",
+  description: "Explora todas las categorías de productos en Vanesa Bodeguita: Abarrotes, Bebidas, Lácteos, Snacks, Limpieza y más. Encuentra todo lo que necesitas.",
+  keywords: ["categorías productos", "abarrotes", "bebidas", "lácteos", "snacks", "limpieza", "bodega categorías"],
+  openGraph: {
+    title: "Categorías - Vanesa Bodeguita",
+    description: "Explora todas las categorías de productos. Encuentra todo lo que necesitas en un solo lugar.",
+    type: "website",
+  },
+  alternates: {
+    canonical: "/categorias",
+  },
+};
 
 export default function CategoriasPage() {
 

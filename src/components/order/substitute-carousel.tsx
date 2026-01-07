@@ -14,6 +14,8 @@ import {
     Minus,
     Plus,
     ShoppingCart,
+    Scale,
+    Hash,
 } from "lucide-react";
 import { Order } from "@/types/order";
 import { capitalizeText } from "@/constants/order-config";
@@ -168,6 +170,16 @@ export function SubstituteCarousel({
                     const isSelected = currentQty > 0;
                     const maxQty = subItem.cantidad_final || 1;
 
+                    // Detectar si es una propuesta fija (kilogramos con peso/cantidad propuesta)
+                    const esPropouestaFija = subItem.peso_propuesto_gramos !== null && subItem.peso_propuesto_gramos !== undefined ||
+                        subItem.cantidad_propuesta !== null && subItem.cantidad_propuesta !== undefined;
+                    
+                    // Obtener la cantidad propuesta (puede ser peso en gramos o unidades)
+                    const cantidadPropuesta = subItem.cantidad_propuesta || 1;
+                    const detallePropuesta = subItem.detalle || 
+                        (subItem.peso_propuesto_gramos ? `${subItem.peso_propuesto_gramos}g` : 
+                        (subItem.cantidad_propuesta ? `${subItem.cantidad_propuesta} unids.` : ''));
+
                     return (
                         <div key={subItem.itemId} className="shrink-0">
                             <div
@@ -208,8 +220,8 @@ export function SubstituteCarousel({
                                         {capitalizeText(subItem.nombre)}
                                     </h5>
 
-                                    {/* Badge Sin Helar / Helada */}
-                                    {subItem.detalle === "Sin helar" && (
+                                    {/* Badge Sin Helar / Helada - Solo si NO es propuesta fija con detalle de peso/cantidad */}
+                                    {!esPropouestaFija && subItem.detalle === "Sin helar" && (
                                         <div className="mb-1">
                                             <Badge
                                                 variant="secondary"
@@ -220,7 +232,7 @@ export function SubstituteCarousel({
                                             </Badge>
                                         </div>
                                     )}
-                                    {subItem.detalle === "Helada" && (
+                                    {!esPropouestaFija && subItem.detalle === "Helada" && (
                                         <div className="mb-1">
                                             <Badge className="text-[10px] h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100 shadow-none font-normal w-fit">
                                                 <Snowflake className="size-3 mr-1" />
@@ -229,69 +241,116 @@ export function SubstituteCarousel({
                                         </div>
                                     )}
 
+                                    {/* Mostrar detalle de propuesta si es kilogramo con propuesta fija */}
+                                    {esPropouestaFija && detallePropuesta && (
+                                        <div className="mb-1">
+                                            <Badge
+                                                variant="secondary"
+                                                className="text-[10px] h-5 px-1.5 bg-purple-50 text-purple-700 border-purple-100 font-semibold w-fit"
+                                            >
+                                                {subItem.peso_propuesto_gramos ? (
+                                                    <Scale className="size-3 mr-1" />
+                                                ) : (
+                                                    <Hash className="size-3 mr-1" />
+                                                )}
+                                                {detallePropuesta}
+                                            </Badge>
+                                        </div>
+                                    )}
+
                                     <div className="mt-auto flex flex-col gap-2">
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-sm font-bold text-blue-600">
-                                                S/ {(subItem.precio_base ?? 0).toFixed(2)}
+                                                S/ {(subItem.precio_final ?? subItem.precio_base ?? 0).toFixed(2)}
                                             </span>
-                                            <span className="text-[10px] text-gray-500">
-                                                Max: {maxQty}
-                                            </span>
+                                            {!esPropouestaFija && (
+                                                <span className="text-[10px] text-gray-500">
+                                                    Max: {maxQty}
+                                                </span>
+                                            )}
                                         </div>
 
-                                        {isSelected ? (
-                                            <div className="flex items-center justify-between bg-gray-50 rounded-full border border-gray-200 p-1">
-                                                <button
+                                        {/* PROPUESTA FIJA: Solo botón Añadir/Quitar */}
+                                        {esPropouestaFija ? (
+                                            isSelected ? (
+                                                <Button
+                                                    size="sm"
+                                                    className="w-full h-8 rounded-full text-xs bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:border-red-300"
                                                     onClick={() =>
-                                                        onUpdateSubstituteQty(
-                                                            item.itemId,
-                                                            subItem.itemId,
-                                                            currentQty - 1
-                                                        )
+                                                        onUpdateSubstituteQty(item.itemId, subItem.itemId, 0)
                                                     }
-                                                    className="size-6 bg-white rounded-full text-gray-600 flex items-center justify-center shadow-sm hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all"
                                                 >
-                                                    {currentQty === 1 ? (
-                                                        <XCircle className="size-3.5" />
-                                                    ) : (
-                                                        <Minus className="size-3.5" />
-                                                    )}
-                                                </button>
-
-                                                <span className="text-sm font-bold text-gray-800 tabular-nums px-2">
-                                                    {currentQty}
-                                                </span>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (currentQty < maxQty)
+                                                    <XCircle className="size-3 mr-1.5" />
+                                                    Quitar
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    className="w-full h-8 rounded-full text-xs bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    onClick={() =>
+                                                        onUpdateSubstituteQty(item.itemId, subItem.itemId, cantidadPropuesta)
+                                                    }
+                                                >
+                                                    <ShoppingCart className="size-3 mr-1.5" />
+                                                    Añadir propuesta
+                                                </Button>
+                                            )
+                                        ) : (
+                                            /* PRODUCTO NORMAL: Controles +/- */
+                                            isSelected ? (
+                                                <div className="flex items-center justify-between bg-gray-50 rounded-full border border-gray-200 p-1">
+                                                    <button
+                                                        onClick={() =>
                                                             onUpdateSubstituteQty(
                                                                 item.itemId,
                                                                 subItem.itemId,
-                                                                currentQty + 1
-                                                            );
-                                                        else
-                                                            toast.error(`Stock máximo disponible: ${maxQty}`);
-                                                    }}
-                                                    className={`size-6 rounded-full flex items-center justify-center shadow-sm transition-all ${currentQty >= maxQty
-                                                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                                                            : "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
-                                                        }`}
+                                                                currentQty - 1
+                                                            )
+                                                        }
+                                                        className="size-6 bg-white rounded-full text-gray-600 flex items-center justify-center shadow-sm hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all"
+                                                    >
+                                                        {currentQty === 1 ? (
+                                                            <XCircle className="size-3.5" />
+                                                        ) : (
+                                                            <Minus className="size-3.5" />
+                                                        )}
+                                                    </button>
+
+                                                    <span className="text-sm font-bold text-gray-800 tabular-nums px-2">
+                                                        {currentQty}
+                                                    </span>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            if (currentQty < maxQty)
+                                                                onUpdateSubstituteQty(
+                                                                    item.itemId,
+                                                                    subItem.itemId,
+                                                                    currentQty + 1
+                                                                );
+                                                            else
+                                                                toast.error(`Stock máximo disponible: ${maxQty}`);
+                                                        }}
+                                                        className={`size-6 rounded-full flex items-center justify-center shadow-sm transition-all ${currentQty >= maxQty
+                                                                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                                                : "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
+                                                            }`}
+                                                    >
+                                                        <Plus className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    className="w-full h-8 rounded-full text-xs bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    onClick={() =>
+                                                        onUpdateSubstituteQty(item.itemId, subItem.itemId, 1)
+                                                    }
                                                 >
-                                                    <Plus className="size-3.5" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <Button
-                                                size="sm"
-                                                className="w-full h-8 rounded-full text-xs bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300"
-                                                onClick={() =>
-                                                    onUpdateSubstituteQty(item.itemId, subItem.itemId, 1)
-                                                }
-                                            >
-                                                <ShoppingCart className="size-3 mr-1.5" />
-                                                Agregar
-                                            </Button>
+                                                    <ShoppingCart className="size-3 mr-1.5" />
+                                                    Agregar
+                                                </Button>
+                                            )
                                         )}
                                     </div>
                                 </div>
