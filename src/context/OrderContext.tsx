@@ -24,6 +24,7 @@ interface OrderContextType {
   loading: boolean;
   createOrder: (orderData: CreateOrderData) => Promise<string | null>;
   fetchUserOrders: () => Promise<void>;
+  fetchOrdersByDate: (fecha: Date) => Promise<void>;
   fetchOrderById: (orderId: string) => Promise<Order | null>;
   updateOrderStatus: (orderId: string, newStatus: EstadoPedido) => Promise<boolean>;
 }
@@ -33,6 +34,7 @@ const OrderContext = createContext<OrderContextType>({
   loading: false,
   createOrder: async () => null,
   fetchUserOrders: async () => { },
+  fetchOrdersByDate: async () => { },
   fetchOrderById: async () => null,
   updateOrderStatus: async () => false,
 });
@@ -173,6 +175,52 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user]);
 
+  // Obtener pedidos filtrados por fecha específica
+  const fetchOrdersByDate = useCallback(async (fecha: Date) => {
+    if (!user) {
+      setOrders([]);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Establecer inicio del día (00:00:00)
+      const inicioDia = new Date(fecha);
+      inicioDia.setHours(0, 0, 0, 0);
+      
+      // Establecer fin del día (23:59:59)
+      const finDia = new Date(fecha);
+      finDia.setHours(23, 59, 59, 999);
+
+      const ordersRef = collection(db, "pedidos");
+      const q = query(
+        ordersRef,
+        where("userId", "==", user.uid),
+        where("fecha_creacion", ">=", Timestamp.fromDate(inicioDia)),
+        where("fecha_creacion", "<=", Timestamp.fromDate(finDia)),
+        orderBy("fecha_creacion", "desc")
+      );
+
+      const querySnapshot = await getDocs(q);
+      const fetchedOrders: Order[] = [];
+
+      querySnapshot.forEach((doc) => {
+        fetchedOrders.push({
+          orderId: doc.id,
+          ...doc.data(),
+        } as Order);
+      });
+
+      setOrders(fetchedOrders);
+    } catch (error) {
+      console.error("Error al obtener pedidos por fecha:", error);
+      toast.error("Error al cargar los pedidos");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   // Obtener un pedido específico por ID
   const fetchOrderById = useCallback(
     async (orderId: string): Promise<Order | null> => {
@@ -232,6 +280,7 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
         loading,
         createOrder,
         fetchUserOrders,
+        fetchOrdersByDate,
         fetchOrderById,
         updateOrderStatus,
       }}

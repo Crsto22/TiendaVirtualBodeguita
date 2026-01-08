@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
@@ -17,7 +17,8 @@ import {
   AlertCircle,
   ShoppingBag,
   CalendarDays,
-  Receipt
+  Receipt,
+  Filter
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -68,13 +69,44 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; icon: any }>
 export default function PedidosPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { orders, loading, fetchUserOrders } = useOrder();
+  const { orders, loading, fetchOrdersByDate } = useOrder();
+  const [filtro, setFiltro] = useState<'hoy' | 'ayer' | 'especifico'>('hoy');
+  const [fechaEspecifica, setFechaEspecifica] = useState<string>('');
 
+  // Función para cargar pedidos según el filtro
+  const cargarPedidos = useCallback(() => {
+    let fecha: Date;
+
+    switch (filtro) {
+      case 'hoy':
+        fecha = new Date();
+        break;
+      case 'ayer':
+        fecha = new Date();
+        fecha.setDate(fecha.getDate() - 1);
+        break;
+      case 'especifico':
+        if (!fechaEspecifica) return;
+        fecha = new Date(fechaEspecifica + 'T00:00:00');
+        break;
+      default:
+        fecha = new Date();
+    }
+
+    fetchOrdersByDate(fecha);
+  }, [filtro, fechaEspecifica, fetchOrdersByDate]);
+
+  // Cargar pedidos de hoy cuando el usuario está autenticado
   useEffect(() => {
     if (user) {
-      fetchUserOrders();
+      cargarPedidos();
     }
-  }, [user, fetchUserOrders]);
+  }, [user, cargarPedidos]);
+
+  // Cambiar filtro y recargar
+  const cambiarFiltro = (nuevoFiltro: 'hoy' | 'ayer' | 'especifico') => {
+    setFiltro(nuevoFiltro);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-24 md:pb-0 font-sans">
@@ -101,6 +133,57 @@ export default function PedidosPage() {
       <div className="container mx-auto px-4 -mt-8 relative z-20">
         {user ? (
           <div className="max-w-4xl mx-auto">
+            {/* Filtros de Fecha */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">
+              {/* Botones de Filtro */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                <button
+                  onClick={() => cambiarFiltro('hoy')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    filtro === 'hoy'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Hoy
+                </button>
+                <button
+                  onClick={() => cambiarFiltro('ayer')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    filtro === 'ayer'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Ayer
+                </button>
+                <button
+                  onClick={() => cambiarFiltro('especifico')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    filtro === 'especifico'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Fecha específica
+                </button>
+              </div>
+
+              {/* Selector de Fecha Específica */}
+              {filtro === 'especifico' && (
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="size-5 text-gray-400" />
+                  <input
+                    type="date"
+                    value={fechaEspecifica}
+                    onChange={(e) => setFechaEspecifica(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              )}
+            </div>
+
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100">
                 <Loader2 className="size-12 animate-spin text-primary mb-4" />
@@ -118,17 +201,24 @@ export default function PedidosPage() {
                   />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  Aún no tienes pedidos
+                  {filtro === 'hoy' && 'No tienes pedidos hoy'}
+                  {filtro === 'ayer' && 'No tienes pedidos de ayer'}
+                  {filtro === 'especifico' && 'No hay pedidos en esta fecha'}
                 </h3>
                 <p className="text-gray-500 max-w-md mx-auto mb-8 leading-relaxed">
-                  Explora nuestro catálogo y realiza tu primera compra. Tus pedidos aparecerán aquí para que puedas seguirlos.
+                  {filtro === 'hoy' 
+                    ? 'No has realizado ningún pedido hoy. ¡Explora nuestro catálogo!'
+                    : 'No se encontraron pedidos para el período seleccionado. Prueba con otra fecha o realiza un nuevo pedido.'
+                  }
                 </p>
-                <button
-                  onClick={() => router.push('/')}
-                  className="bg-primary text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-primary/30 hover:bg-primary/90 transition-transform active:scale-95"
-                >
-                  Comenzar a comprar
-                </button>
+                {filtro === 'hoy' && (
+                  <button
+                    onClick={() => router.push('/')}
+                    className="bg-primary text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-primary/30 hover:bg-primary/90 transition-transform active:scale-95"
+                  >
+                    Comenzar a comprar
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-4 md:space-y-5">

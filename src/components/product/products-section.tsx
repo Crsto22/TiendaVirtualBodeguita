@@ -13,6 +13,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useStoreConfigContext } from "@/context/StoreConfigContext";
 import { ProductWeightSelector } from "@/components/product/product-weight-selector";
 import { ProductNewBadge } from "@/components/product/product-new-badge";
+import { FeaturedCategories } from "@/components/inicio/featured-categories";
 
 // Función para capitalizar texto (primera letra mayúscula, resto minúscula)
 function capitalizeText(text: string): string {
@@ -68,7 +69,7 @@ function CategoryCarousel({ category }: { category: Category }) {
   const isNewProductsSection = category.categoria_id === 'nuevos';
 
   return (
-    <div className={`mb-8 ${isNewProductsSection ? 'bg-gradient-to-br from-darkblue to-primary rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden' : ''}`}>
+    <div className={`mb-8 ${isNewProductsSection ? 'bg-darkblue rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden' : ''}`}>
       {/* Efectos decorativos para productos nuevos */}
       {isNewProductsSection && (
         <>
@@ -79,10 +80,26 @@ function CategoryCarousel({ category }: { category: Category }) {
       
       <div className={`flex items-center mb-4 ${isNewProductsSection ? 'justify-center relative' : 'justify-between'}`}>
         {isNewProductsSection ? (
-          <div className="text-center">
-            <h3 className="text-2xl md:text-4xl font-black text-white drop-shadow-lg">
-              {category.categoria_nombre}
-            </h3>
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* SVG Productos Nuevos */}
+            <div className="relative w-20 h-20  shrink-0">
+              <Image
+                src="/Inicio/ProductoNuevos.svg"
+                alt="Productos Nuevos"
+                fill
+                className="object-contain drop-shadow-lg"
+              />
+            </div>
+            
+            {/* Texto PRODUCTOS / NUEVOS */}
+            <div className="flex flex-col leading-none">
+              <span className="text-sm sm:text-base font-black text-white drop-shadow-lg tracking-wide">
+                PRODUCTOS
+              </span>
+              <span className="text-2xl md:text-4xl font-black text-amber-300 drop-shadow-lg tracking-wide">
+                NUEVOS
+              </span>
+            </div>
           </div>
         ) : (
           <>
@@ -393,25 +410,29 @@ export function ProductsSection({ initialData }: ProductsSectionProps) {
   const productosNuevos = data?.productosNuevos;
 
   return (
-    <section className="py-8 bg-gray-50">
-      <div className="container mx-auto px-4">
-        {/* Productos nuevos (si existen) */}
-        {productosNuevos && productosNuevos.length > 0 && (
-          <CategoryCarousel
-            key="nuevos"
-            category={{
-              categoria_id: 'nuevos',
-              categoria_nombre: 'Productos nuevos',
-              productos: productosNuevos,
-            }}
-          />
-        )}
+    <>
+      <FeaturedCategories />
 
-        {/* Render each category with its carousel */}
-        {categorias?.map((category) => (
-          <CategoryCarousel key={category.categoria_id} category={category} />
-        ))}
-      </div>
-    </section>
+      <section className="py-4 md:py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          {/* Productos nuevos (si existen) */}
+          {productosNuevos && productosNuevos.length > 0 && (
+            <CategoryCarousel
+              key="nuevos"
+              category={{
+                categoria_id: 'nuevos',
+                categoria_nombre: 'Productos nuevos',
+                productos: productosNuevos,
+              }}
+            />
+          )}
+
+          {/* Render each category with its carousel */}
+          {categorias?.map((category) => (
+            <CategoryCarousel key={category.categoria_id} category={category} />
+          ))}
+        </div>
+      </section>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { ShoppingCart, Trash2, Plus, Minus, Snowflake, Info, ArrowRight, Thermom
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -67,12 +67,28 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
   // Auth
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Order Context
   const { createOrder, loading: orderLoading } = useOrder();
 
   // Estado local para controlar qué productos tienen la opción de heladas visible (ahora múltiples)
   const [mostrarHeladaIds, setMostrarHeladaIds] = useState<Set<string>>(new Set());
+
+  // Cerrar el carrito cuando cambie la ruta (navegación)
+  useEffect(() => {
+    if (open) {
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Cerrar el carrito automáticamente cuando la tienda se cierra
+  useEffect(() => {
+    if (!tiendaAbierta && open) {
+      onClose();
+    }
+  }, [tiendaAbierta, open, onClose]);
 
   // Función personalizada para actualizar cantidad manteniendo heladas
   const handleUpdateQuantity = (id: string, newCantidad: number, currentItem: any) => {

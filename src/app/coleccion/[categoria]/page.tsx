@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useSWR from "swr";
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
@@ -33,7 +33,17 @@ export default function CategoriaPage() {
   const categoriaSlug = params.categoria as string;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [showAllCategories, setShowAllCategories] = useState(false); // Estado para "Ver más" en filtros
+  const [showAllCategories, setShowAllCategories] = useState(() => {
+    // Cargar estado desde localStorage al inicializar
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showAllCategories');
+      return saved === 'true';
+    }
+    return false;
+  });
+
+  // Ref para el contenedor de scroll horizontal de categorías móvil
+  const categoriesScrollRef = useRef<HTMLDivElement>(null);
 
   // Decodificar el slug: "lacteos-y-huevos" → "Lacteos Y Huevos"
   const categoriaNombre = categoriaSlug === "todas"
@@ -62,6 +72,31 @@ export default function CategoriaPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [categoriaSlug]);
+
+  // Guardar estado del filtro en localStorage cuando cambie
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showAllCategories', String(showAllCategories));
+    }
+  }, [showAllCategories]);
+
+  // Restaurar posición de scroll horizontal al cargar
+  useEffect(() => {
+    if (categoriesScrollRef.current && typeof window !== 'undefined') {
+      const savedScrollPosition = localStorage.getItem('categoriesScrollPosition');
+      if (savedScrollPosition) {
+        categoriesScrollRef.current.scrollLeft = parseInt(savedScrollPosition, 10);
+      }
+    }
+  }, []);
+
+  // Guardar posición de scroll antes de cambiar de categoría
+  const handleCategoryChangeWithScroll = (categoryName: string | null) => {
+    if (categoriesScrollRef.current && typeof window !== 'undefined') {
+      localStorage.setItem('categoriesScrollPosition', String(categoriesScrollRef.current.scrollLeft));
+    }
+    handleCategoryChange(categoryName);
+  };
 
   // Obtener info de paginación según el tipo de respuesta
   const paginacion = categoriaNombre
@@ -140,11 +175,14 @@ export default function CategoriaPage() {
 
         {/* Filtro Horizontal de Categorías - Móvil (Chips Scrolleables) */}
         <div className="lg:hidden mb-4 -mx-3 sm:-mx-4">
-          <div className="overflow-x-auto px-3 sm:px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div 
+            ref={categoriesScrollRef}
+            className="overflow-x-auto px-3 sm:px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          >
             <div className="flex gap-2 min-w-max">
               {/* Chip "Todas" */}
               <button
-                onClick={() => handleCategoryChange(null)}
+                onClick={() => handleCategoryChangeWithScroll(null)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${!categoriaNombre
                   ? "bg-primary text-white shadow-md"
                   : "bg-white text-gray-700 border border-gray-200 hover:border-primary"
@@ -160,7 +198,7 @@ export default function CategoriaPage() {
               {categories.map((category, index) => (
                 <button
                   key={index}
-                  onClick={() => handleCategoryChange(category.name)}
+                  onClick={() => handleCategoryChangeWithScroll(category.name)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${categoriaNombre?.toLowerCase() === category.name.toLowerCase()
                     ? "bg-primary text-white shadow-md"
                     : "bg-white text-gray-700 border border-gray-200 hover:border-primary"
@@ -305,23 +343,22 @@ export default function CategoriaPage() {
 
             {/* Grid de productos - Optimizado para móvil */}
             {!isLoading && !error && productos && productos.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
                 {productos.map((product: Product) => (
                   <Link
                     key={product.id}
                     href={`/productos/${product.producto_web}`}
                     className="group"
                   >
-                    <div className={`bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-60 sm:h-[280px] md:h-80 flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
+                    <div className={`bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                       {/* Image Container */}
-                      <div className="relative h-[110px] sm:h-[140px] md:h-40 bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
+                      <div className="relative w-full aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                         {product.imagen ? (
                           <Image
                             src={product.imagen}
                             alt={product.nombre}
                             fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                            className={`object-contain p-2 transition-transform duration-500 group-hover:scale-110 ${product.stock === 0 ? 'grayscale' : ''}`}
+                            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${product.stock === 0 ? 'grayscale' : ''}`}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200">
