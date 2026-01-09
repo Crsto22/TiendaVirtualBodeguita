@@ -34,6 +34,7 @@ export function Navbar() {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [userSettingsOpen, setUserSettingsOpen] = useState(false);
 
 
   const { user, logout } = useAuth();
@@ -41,6 +42,7 @@ export function Navbar() {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
+        {/* Primera fila: Logo, Buscador y Acciones */}
         <div className="flex items-center justify-between gap-4">
           {/* Mobile: Menu Icon */}
 
@@ -86,8 +88,9 @@ export function Navbar() {
               <User className="size-6!" />
             </Button >
           )}
-          {/* Logo y Categorías - Desktop */}
-          <div className="hidden md:flex items-center gap-4">
+          
+          {/* Logo y Buscador - Desktop */}
+          <div className="hidden md:flex items-center gap-4 flex-1">
             <Link href="/inicio" className="shrink-0 hover:opacity-90 transition-opacity">
               <Image
                 src="/Logo.png"
@@ -99,84 +102,29 @@ export function Navbar() {
               />
             </Link>
 
-            {/* Categorías Dropdown - Desktop */}
-            <div
-              className="relative"
-              onMouseEnter={() => setDropdownOpen(true)}
-              onMouseLeave={() => setDropdownOpen(false)}
-            >
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 border-2 border-darkblue text-darkblue hover:bg-darkblue hover:text-white font-semibold rounded-full px-6 py-2 transition-colors"
-              >
-                Categorías
-                <ChevronDown className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </Button>
-
-              {/* Mega Menu Dropdown */}
-              {dropdownOpen && (
-                <div className="absolute left-0 top-full pt-2 w-[800px] z-50">
-                  <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-100 p-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <h3 className="text-lg font-bold text-darkblue mb-4 px-2">
-                      Todas las Categorías
-                    </h3>
-
-                    {/* Grid de categorías */}
-                    <div className="grid grid-cols-4 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar">
-                      {categories.map((category, index) => (
-                        <Link
-                          key={index}
-                          href={`/coleccion/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, '-'))}`}
-                          className="group flex flex-col items-center p-3 rounded-xl hover:bg-linear-to-br hover:from-primary/5 hover:to-primary/10 transition-all duration-200 border-2 border-transparent hover:border-primary/20"
-                          onClick={() => setDropdownOpen(false)}
-                        >
-                          {/* Imagen de categoría */}
-                          <div className="w-16 h-16 rounded-full overflow-hidden mb-2 ring-2 ring-gray-200 group-hover:ring-primary transition-all duration-200 flex items-center justify-center bg-gray-50">
-                            <Image
-                              src={category.image}
-                              alt={category.name}
-                              width={64}
-                              height={64}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-
-                          {/* Nombre */}
-                          <p className="text-xs font-semibold text-center text-darkblue group-hover:text-primary transition-colors line-clamp-2 h-8">
-                            {category.name}
-                          </p>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Footer del dropdown */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                      <Link
-                        href="/coleccion/todas"
-                        className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Ver todos los productos →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Buscador - Desktop */}
+            <div className="max-w-xl flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar en Vanesa Bodeguita"
+                  className="w-full px-4 py-3.5 pr-12 bg-gray-100 rounded-full focus:outline-none focus:border-primary transition-colors text-sm font-semibold placeholder:font-semibold placeholder:text-gray-400"
+                  style={{ fontFamily: 'var(--font-poppins), system-ui, -apple-system, sans-serif' }}
+                  onClick={() => setOpenSearch(true)}
+                  readOnly
+                />
+                <button
+                  onClick={() => setOpenSearch(true)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white p-3 rounded-full transition-colors"
+                >
+                  <Search className="size-5" />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
-            {/* Search Icon - Desktop only */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden md:block text-darkblue hover:text-primary  rounded-full"
-              onClick={() => setOpenSearch(true)}
-            >
-              <Search className="size-6!" />
-            </Button>
-
             {/* User Icon */}
             {/* User Section - Desktop */}
             {user ? (
@@ -208,41 +156,17 @@ export function Navbar() {
 
                 {/* User Dropdown */}
                 {userDropdownOpen && (
-                  <div className="absolute right-0 top-full pt-2 w-48 z-50">
-                    <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                        <p className="text-xs text-gray-500">Conectado como</p>
-                        <p className="text-sm font-bold text-darkblue truncate">{user.nombre}</p>
+                  <div className="absolute right-0 top-full pt-2 w-56 z-50">
+                    <div className="bg-yellow-50 rounded-xl shadow-xl border-l-4 border-darkblue p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-600 font-medium">Conectado como</p>
+                          <p className="text-sm font-bold text-darkblue truncate mt-1">{user.nombre}</p>
+                        </div>
+                        <svg className="w-6 h-6 text-darkblue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
                       </div>
-
-                      <Link
-                        href="/pedidos"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        <Package className="size-4" />
-                        Pedidos
-                      </Link>
-
-                      <Link
-                        href="/perfil"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        <Settings className="size-4" />
-                        Ajustes
-                      </Link>
-
-                      <button
-                        onClick={() => {
-                          setIsLogoutOpen(true);
-                          setUserDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <LogOut className="size-4" />
-                        Cerrar sesión
-                      </button>
                     </div>
                   </div>
                 )}
@@ -258,11 +182,55 @@ export function Navbar() {
               </Button>
             )}
 
+            {/* User Settings Button - Solo cuando está logueado */}
+            {user && (
+              <div
+                className="relative hidden md:block"
+                onMouseEnter={() => setUserSettingsOpen(true)}
+                onMouseLeave={() => setUserSettingsOpen(false)}
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-darkblue hover:text-primary hover:bg-gray-50"
+                >
+                  <User className="size-6" />
+                </Button>
+
+                {/* Settings Dropdown */}
+                {userSettingsOpen && (
+                  <div className="absolute right-0 top-full pt-2 w-48 z-50">
+                    <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <Link
+                        href="/perfil"
+                        onClick={() => setUserSettingsOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <Settings className="size-4" />
+                        Ajustes
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          setIsLogoutOpen(true);
+                          setUserSettingsOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <LogOut className="size-4" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Cart Button */}
             {tiendaAbierta ? (
               <Button
                 onClick={openCart}
-                className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2 relative"
+                className="text-darkblue bg-white hover:bg-white cursor-pointer px-4 py-2 flex items-center gap-2 relative"
               >
                 <ShoppingCart className="size-6!" />
                 {totalItems > 0 && (
@@ -281,7 +249,83 @@ export function Navbar() {
               </Button>
             )}
           </div>
-        </div >
+        </div>
+
+        {/* Segunda fila: Categorías de Productos - Solo Desktop */}
+        <div className="hidden md:flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
+          {/* Categorías Dropdown - Desktop */}
+          <div
+            className="relative"
+            onMouseEnter={() => setDropdownOpen(true)}
+            onMouseLeave={() => setDropdownOpen(false)}
+          >
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 text-darkblue font-semibold rounded-full border-none cursor-pointer hover:bg-white px-6 py-2 transition-colors"
+            >
+              Categorías de Productos
+              <ChevronDown className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </Button>
+
+            {/* Mega Menu Dropdown */}
+            {dropdownOpen && (
+              <div className="absolute left-0 top-full pt-2 w-[800px] z-50">
+                <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-100 p-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <h3 className="text-lg font-bold text-darkblue mb-4 px-2">
+                    Todas las Categorías
+                  </h3>
+
+                  {/* Grid de categorías */}
+                  <div className="grid grid-cols-4 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar">
+                    {categories.map((category, index) => (
+                      <Link
+                        key={index}
+                        href={`/coleccion/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, '-'))}`}
+                        className="group flex flex-col items-center p-3 rounded-xl hover:bg-linear-to-br hover:from-primary/5 hover:to-primary/10 transition-all duration-200 border-2 border-transparent hover:border-primary/20"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        {/* Imagen de categoría */}
+                        <div className="w-16 h-16 rounded-full overflow-hidden mb-2 ring-2 ring-gray-200 group-hover:ring-primary transition-all duration-200 flex items-center justify-center bg-gray-50">
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Nombre */}
+                        <p className="text-xs font-semibold text-center text-darkblue group-hover:text-primary transition-colors line-clamp-2 h-8">
+                          {category.name}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Footer del dropdown */}
+                  <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                    <Link
+                      href="/coleccion/todas"
+                      className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Ver todos los productos →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Historial de Pedidos - Desktop */}
+          <Link
+            href="/pedidos"
+            className="text-darkblue text-sm font-semibold  transition-colors px-6 py-2 rounded-full0"
+          >
+            Historial de Pedidos
+          </Link>
+        </div>
       </div >
       <SearchModal open={openSearch} onClose={() => setOpenSearch(false)} />
 

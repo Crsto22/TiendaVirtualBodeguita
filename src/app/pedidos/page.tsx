@@ -113,26 +113,15 @@ export default function PedidosPage() {
       <Navbar />
       <MobileDock />
 
-      {/* Header Moderno con Gradiente y Curva */}
-      <section className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white pt-8 pb-16 md:pt-12 md:pb-20 rounded-b-[2.5rem] md:rounded-b-[3rem] shadow-lg overflow-hidden">
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
-
-        <div className="container mx-auto px-6 relative z-10 text-center md:text-left">
-          <h1 className="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">
-            Mis Pedidos
-          </h1>
-          <p className="text-primary-foreground/90 text-sm md:text-lg font-medium max-w-lg mx-auto md:mx-0">
-            Seguimiento en tiempo real y historial completo de tus compras.
-          </p>
-        </div>
-      </section>
-
-      {/* Contenedor Principal (Superpuesto al header para efecto 'Card') */}
-      <div className="container mx-auto px-4 -mt-8 relative z-20">
+      {/* Contenedor Principal */}
+      <div className="container mx-auto px-4 pt-6 md:pt-8">
         {user ? (
-          <div className="max-w-4xl mx-auto">
+          <div className=" mx-auto">
+            {/* Título */}
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-5 px-2">
+              Historial de Pedidos
+            </h1>
+
             {/* Filtros de Fecha */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">
               {/* Botones de Filtro */}
@@ -310,9 +299,7 @@ export default function PedidosPage() {
         ) : (
           /* Estado No Autenticado */
           <div className="flex flex-col items-center justify-center py-12 md:py-20 text-center">
-            <div className="bg-white p-8 md:p-12 rounded-[2rem] shadow-2xl shadow-gray-200/50 max-w-md w-full border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-gray-200 via-gray-400 to-gray-200"></div>
-
+            <div className=" p-8 md:p-12  max-w-md w-full relative overflow-hidden">
               <div className="flex justify-center mx-auto mb-6 md:mb-8 relative">
                 <div className="absolute inset-0 bg-gray-100 rounded-full scale-110 blur-xl opacity-50"></div>
                 <Image
@@ -326,13 +313,8 @@ export default function PedidosPage() {
 
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">Inicia Sesión</h2>
               <p className="text-gray-500 mb-8 text-base md:text-lg leading-relaxed">
-                Para ver el seguimiento de tus pedidos y tu historial de compras, necesitas acceder a tu cuenta.
+                Para ver el seguimiento de tus pedidos necesitas acceder a tu cuenta.
               </p>
-
-              {/* Sugerencia visual (opcional si hay un botón de login en el navbar) */}
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-sm text-gray-600">
-                <p>Usa el botón de <strong>ingresar</strong> en la parte superior.</p>
-              </div>
             </div>
           </div>
         )}

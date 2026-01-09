@@ -33,17 +33,18 @@ export default function CategoriaPage() {
   const categoriaSlug = params.categoria as string;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [showAllCategories, setShowAllCategories] = useState(() => {
-    // Cargar estado desde localStorage al inicializar
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('showAllCategories');
-      return saved === 'true';
-    }
-    return false;
-  });
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   // Ref para el contenedor de scroll horizontal de categorías móvil
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
+
+  // Cargar estado desde localStorage después del montaje (solo cliente)
+  useEffect(() => {
+    const saved = localStorage.getItem('showAllCategories');
+    if (saved === 'true') {
+      setShowAllCategories(true);
+    }
+  }, []);
 
   // Decodificar el slug: "lacteos-y-huevos" → "Lacteos Y Huevos"
   const categoriaNombre = categoriaSlug === "todas"
@@ -305,20 +306,35 @@ export default function CategoriaPage() {
           <div className="flex-1">
             {/* Info y acciones */}
             <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <p className="text-xs sm:text-sm text-gray-600">
-                {isLoading ? (
-                  "Cargando..."
-                ) : (
-                  ""
-                )}
-              </p>
             </div>
 
-            {/* Loading state */}
+            {/* Loading state - Skeleton */}
             {isLoading && (
-              <div className="text-center py-12 sm:py-16">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary"></div>
-                <p className="mt-4 text-sm sm:text-base text-gray-600">Cargando productos...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <div key={index} className="bg-white rounded-xl sm:rounded-2xl shadow-md overflow-hidden w-full flex sm:flex-col animate-pulse">
+                    {/* Image Skeleton */}
+                    <div className="relative w-28 sm:w-full aspect-square bg-gradient-to-br from-gray-200 to-gray-300 shrink-0"></div>
+                    
+                    {/* Content Skeleton */}
+                    <div className="flex flex-col flex-1 p-2 sm:p-3 space-y-2">
+                      {/* Title Skeleton */}
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2"></div>
+                      
+                      {/* Unit Type Skeleton */}
+                      <div className="h-2 sm:h-3 bg-gray-100 rounded w-1/3"></div>
+                      
+                      <div className="mt-auto space-y-2">
+                        {/* Price Skeleton */}
+                        <div className="h-5 sm:h-6 bg-gray-300 rounded w-2/5"></div>
+                        
+                        {/* Button Skeleton */}
+                        <div className="h-8 sm:h-9 bg-gray-200 rounded-full w-full sm:w-3/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -343,22 +359,22 @@ export default function CategoriaPage() {
 
             {/* Grid de productos - Optimizado para móvil */}
             {!isLoading && !error && productos && productos.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
                 {productos.map((product: Product) => (
                   <Link
                     key={product.id}
                     href={`/productos/${product.producto_web}`}
                     className="group"
                   >
-                    <div className={`bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
+                    <div className={`bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full flex sm:flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                       {/* Image Container */}
-                      <div className="relative w-full aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                      <div className="relative w-28 sm:w-full aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden shrink-0 p-2">
                         {product.imagen ? (
                           <Image
                             src={product.imagen}
                             alt={product.nombre}
                             fill
-                            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${product.stock === 0 ? 'grayscale' : ''}`}
+                            className={`object-contain transition-transform duration-500 group-hover:scale-105 ${product.stock === 0 ? 'grayscale' : ''}`}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -374,7 +390,8 @@ export default function CategoriaPage() {
                             <svg className="size-3 sm:size-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                             </svg>
-                            Producto Agotado
+                            <span className="hidden sm:inline">Producto Agotado</span>
+                            <span className="sm:hidden">Agotado</span>
                           </div>
                         )}
                       </div>
@@ -387,7 +404,7 @@ export default function CategoriaPage() {
                         </h3>
 
                         {/* Unit Type */}
-                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1 flex items-center gap-1">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1 flex items-center gap-1 flex-wrap">
                           <span>{product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}</span>
                           {product.retornable && (
                             <span className="text-secondary font-semibold flex items-center gap-0.5">
@@ -398,7 +415,7 @@ export default function CategoriaPage() {
                         </p>
 
                         {/* Price and Cart Container */}
-                        <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-1">
+                        <div className="mt-auto flex flex-col gap-2">
                           {/* Precio */}
                           <div className="flex flex-col min-w-0">
                             {product.mostrar_precio_web !== false && (
@@ -409,7 +426,7 @@ export default function CategoriaPage() {
                           </div>
 
                           {/* Botón de carrito o controles */}
-                          <div className="flex justify-center md:justify-end">
+                          <div className="flex justify-start sm:justify-center">
                             {tiendaAbierta && (() => {
                               const cartItem = items.find(item => item.id === product.id);
                               const quantityInCart = items.reduce((acc, item) => {
@@ -421,7 +438,7 @@ export default function CategoriaPage() {
 
                               if (cartItem && product.tipo_unidad !== 'kilogramo') {
                                 return (
-                                  <div className="flex items-center gap-5 sm:gap-1 bg-white border-2 border-gray-200 rounded-full px-1 py-1 shadow-sm">
+                                  <div className="flex items-center gap-1 bg-white border-2 border-gray-200 rounded-full px-1 py-1 shadow-sm">
                                     <button
                                       onClick={(e) => {
                                         e.preventDefault();

@@ -137,9 +137,6 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
         <SheetHeader className="bg-white px-6 py-5 border-b border-gray-100 shadow-sm z-10 sticky top-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl font-bold text-slate-800 flex items-center gap-3">
-              <div className="bg-primary p-2 rounded-xl shadow-primary-200 shadow-md">
-                <ShoppingCart className="size-5 text-white" />
-              </div>
               Mi Carrito
             </SheetTitle>
             <Badge variant="secondary" className="bg-blue-50 text-blue-700 px-3 py-1 text-xs font-bold rounded-full border border-blue-100">
@@ -154,19 +151,18 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
               <div className="relative">
-                <div className="absolute inset-0 bg-blue-100 rounded-full scale-110 blur-xl opacity-50"></div>
-                <div className="w-32 h-32 rounded-full bg-white shadow-lg flex items-center justify-center relative z-10 border border-gray-100">
-                  <ShoppingCart className="size-12 text-gray-300" />
+                <div className="w-32 h-32  flex items-center justify-center relative z-10 ">
+                  <ShoppingCart className="size-24 text-gray-300" />
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-2">Tu carrito está vacío</h3>
-                <p className="text-sm text-slate-500 max-w-[200px] mx-auto leading-relaxed">
-                  Agrega productos deliciosos para comenzar tu compra.
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">Carrito Vacío</h3>
+                <p className="text-xs md:text-sm text-slate-500 font-light leading-relaxed">
+                  Los productos agregados se mostrarán aquí
                 </p>
               </div>
-              <Button onClick={onClose} variant="ghost" className="text-blue-600 font-medium hover:bg-blue-50 hover:text-blue-700">
-                Ir a comprar
+              <Button onClick={onClose} variant="ghost" className="bg-darkblue text-sm font-medium text-white rounded-full px-6 py-3 shadow-md hover:bg-darkblue/90 cursor-pointer">
+                Agregar productos
               </Button>
             </div>
           ) : (
@@ -560,11 +556,11 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
           <div className="bg-white border-t border-gray-100 p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] z-20">
 
             {!hacerPedidos && (
-              <div className="mb-4 bg-amber-50 border border-amber-100 text-amber-800 px-4 py-3 rounded-xl flex items-start gap-3">
+              <div className="mb-4 bg-white border border-gray-200 text-amber-800 px-4 py-3 rounded-xl flex items-start gap-3">
                 <div className="bg-amber-100 p-1 rounded-full shrink-0"><Info className="size-4 text-amber-600" /></div>
                 <div>
                   <p className="text-xs font-bold">Pedidos deshabilitados</p>
-                  <p className="text-[10px] opacity-80 mt-0.5">Estamos reponiendo stock o fuera de horario de atención.</p>
+                  <p className="text-[10px] opacity-80 mt-0.5">Estamos reponiendo stock</p>
                 </div>
               </div>
             )}

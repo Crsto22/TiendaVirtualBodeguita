@@ -285,8 +285,7 @@ export default function BuscarPage() {
         {recentSearches.length === 0 && !searchQuery && (
           <section className="flex flex-col items-center justify-center py-20 text-center">
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-primary/5 rounded-full"></div>
-              <div className="relative bg-white p-6 rounded-full shadow-lg border border-gray-100">
+              <div className="relative ">
                 <Search className="size-12 text-primary/80" />
               </div>
             </div>

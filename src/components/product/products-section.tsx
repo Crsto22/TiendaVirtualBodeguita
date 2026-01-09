@@ -136,16 +136,16 @@ function CategoryCarousel({ category }: { category: Category }) {
               href={`/productos/${product.producto_web}`}
               className="group shrink-0"
             >
-              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[260px] sm:h-[280px] md:h-[340px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
+              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                 {/* Image Container */}
-                <div className="relative h-[120px] sm:h-[140px] md:h-[180px] bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-square bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                   {product.imagen ? (
                     <Image
                       src={product.imagen}
                       alt={product.nombre}
                       fill
                       sizes="(max-width: 640px) 150px, (max-width: 768px) 160px, (max-width: 1024px) 200px, 220px"
-                      className={product.stock === 0 ? 'grayscale' : ''}
+                      className={`object-cover ${product.stock === 0 ? 'grayscale' : ''}`}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">

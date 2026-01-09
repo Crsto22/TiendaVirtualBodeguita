@@ -54,7 +54,7 @@ export default function ProductDetailPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Store config
-  const { tiendaAbierta } = useStoreConfigContext();
+  const { tiendaAbierta, hacerPedidos } = useStoreConfigContext();
 
   // Zustand store
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
@@ -384,120 +384,99 @@ export default function ProductDetailPage() {
               </div>
               <div>
                 <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Método de entrega</p>
-                <p className="text-xs sm:text-sm md:text-base font-bold text-slate-700 flex items-center gap-1.5 sm:gap-2">
-                  <CheckCircle2 className="size-3 sm:size-4 text-green-500" />
-                  Recojo en tienda disponible
-                </p>
+                {tiendaAbierta && hacerPedidos ? (
+                  <p className="text-xs sm:text-sm md:text-base font-bold text-slate-700 flex items-center gap-1.5 sm:gap-2">
+                    <CheckCircle2 className="size-3 sm:size-4 text-green-500" />
+                    Recojo en tienda disponible
+                  </p>
+                ) : !tiendaAbierta ? (
+                  <div>
+                    <p className="text-xs sm:text-sm md:text-base font-bold text-red-600 flex items-center gap-1.5 sm:gap-2">
+                      <svg className="size-3 sm:size-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      No disponible
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-red-500 mt-0.5">Tienda cerrada</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs sm:text-sm md:text-base font-bold text-amber-600 flex items-center gap-1.5 sm:gap-2">
+                      <svg className="size-3 sm:size-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      No disponible
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-amber-500 mt-0.5">Pedidos deshabilitados</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Actions (Sticky on mobile bottom if you prefer, currently inline) */}
             <div className="mt-auto">
-              {tiendaAbierta && cartItem && product.tipo_unidad !== 'kilogramo' ? (
-                // Quantity Control UI
-                <div className="flex items-center gap-3 sm:gap-4 p-1.5 sm:p-2 bg-white border border-gray-200 rounded-full shadow-lg w-fit max-w-full animate-in slide-in-from-bottom-2">
-                  <button
-                    onClick={() => {
-                      if (cartItem.cantidad === 1) removeItem(product.id);
-                      else updateQuantity(product.id, cartItem.cantidad - 1);
-                    }}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full  bg-red-500 text-white  flex items-center justify-center transition-colors active:scale-90 "
-                  >
-                    {cartItem.cantidad === 1 ? <Trash2 className="size-4 sm:size-5" /> : <Minus className="size-4 sm:size-5" />}
-                  </button>
-
-                  <span className="text-xl sm:text-2xl font-bold text-slate-800 min-w-[3ch] text-center tabular-nums">
-                    {cartItem.cantidad}
-                  </span>
-
-                  <button
-                    onClick={() => {
-                      updateQuantity(product.id, cartItem.cantidad + 1);
-                    }}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-md hover:bg-slate-800 active:scale-90 transition-all"
-                  >
-                    <Plus className="size-5 sm:size-6" />
-                  </button>
-                </div>
-              ) : tiendaAbierta ? (
-                // Add to Cart Button
-                <div className="relative group">
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={isOutOfStock}
-                    className="w-full md:w-auto bg-primary text-white text-sm sm:text-base md:text-lg font-bold py-3 sm:py-3.5 md:py-4 px-6 sm:px-7 md:px-8 rounded-xl sm:rounded-2xl shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2 sm:gap-3"
-                  >
-                    <ShoppingCart className="size-5 sm:size-5 md:size-6" />
-                    <span>{isOutOfStock ? 'Sin Stock' : 'Agregar al Carrito'}</span>
-                  </button>
-
-                  {/* Cart Badge Counter */}
-                  {(() => {
-                    const quantityInCart = items.reduce((acc, item) => {
-                      if (item.id === product.id || item.id.startsWith(`${product.id}-`)) {
-                        return acc + item.cantidad;
-                      }
-                      return acc;
-                    }, 0);
-
-                    if (quantityInCart > 0) {
-                      return (
-                        <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 md:left-[220px] md:right-auto bg-green-500 text-white text-xs sm:text-sm font-bold h-6 min-w-6 sm:h-8 sm:min-w-8 px-1.5 sm:px-2 flex items-center justify-center rounded-full border-2 sm:border-4 border-[#F8F9FA] shadow-lg">
-                          {quantityInCart}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              ) : (
-                <>
-                  <div className="relative group">
+              {tiendaAbierta ? (
+                cartItem && product.tipo_unidad !== 'kilogramo' ? (
+                  // Quantity Control UI
+                  <div className="flex items-center gap-3 sm:gap-4 p-1.5 sm:p-2 bg-white border border-gray-200 rounded-full shadow-lg w-fit max-w-full animate-in slide-in-from-bottom-2">
                     <button
-                      onClick={handleAddToCart}
-                      disabled={isOutOfStock}
-                      className="w-full md:w-auto bg-primary text-white text-sm sm:text-base md:text-lg font-bold py-3 sm:py-3.5 md:py-4 px-6 sm:px-7 md:px-8 rounded-xl sm:rounded-2xl shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2 sm:gap-3"
+                      onClick={() => {
+                        if (cartItem.cantidad === 1) removeItem(product.id);
+                        else updateQuantity(product.id, cartItem.cantidad - 1);
+                      }}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full  bg-red-500 text-white  flex items-center justify-center transition-colors active:scale-90 "
                     >
-                      <ShoppingCart className="size-5 sm:size-5 md:size-6" />
-                      <span>{isOutOfStock ? 'Sin Stock' : 'Agregar al Carrito'}</span>
+                      {cartItem.cantidad === 1 ? <Trash2 className="size-4 sm:size-5" /> : <Minus className="size-4 sm:size-5" />}
                     </button>
 
-                    {/* Cart Badge Counter */}
-                    {(() => {
-                      const quantityInCart = items.reduce((acc, item) => {
-                        if (item.id === product.id || item.id.startsWith(`${product.id}-`)) {
-                          return acc + item.cantidad;
-                        }
-                        return acc;
-                      }, 0);
+                    <span className="text-xl sm:text-2xl font-bold text-slate-800 min-w-[3ch] text-center tabular-nums">
+                      {cartItem.cantidad}
+                    </span>
 
-                      if (quantityInCart > 0) {
-                        return (
-                          <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 md:left-[220px] md:right-auto bg-green-500 text-white text-xs sm:text-sm font-bold h-6 min-w-6 sm:h-8 sm:min-w-8 px-1.5 sm:px-2 flex items-center justify-center rounded-full border-2 sm:border-4 border-[#F8F9FA] shadow-lg ">
-                            {quantityInCart}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+                    <button
+                      onClick={() => {
+                        updateQuantity(product.id, cartItem.cantidad + 1);
+                      }}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary text-white flex items-center justify-center shadow-md hover:bg-secondary-100 active:scale-90 transition-all"
+                    >
+                      <Plus className="size-5 sm:size-6" />
+                    </button>
                   </div>
+                ) : (
+                  // Add to Cart Button
+                  <>
+                    <div className="relative group">
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={isOutOfStock}
+                        className="w-full md:w-auto bg-primary text-white text-sm sm:text-base md:text-lg font-bold py-3 sm:py-3.5 md:py-4 px-6 sm:px-7 md:px-8 rounded-xl sm:rounded-2xl shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2 sm:gap-3"
+                      >
+                        <ShoppingCart className="size-5 sm:size-5 md:size-6" />
+                        <span>{isOutOfStock ? 'Sin Stock' : 'Agregar al Carrito'}</span>
+                      </button>
 
-                  {/* Hidden Price Warning - Below button */}
-                  {product.mostrar_precio_web === false && (
-                    <div className="mt-3 flex items-center gap-2 text-xs sm:text-sm text-slate-500 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100">
-                      <Info className="size-4 text-blue-500" />
-                      <span>Precios sujetos a consulta en tienda.</span>
-                    </div>
-                  )}
-                </>
-              )}
+                      {/* Cart Badge Counter */}
+                      {(() => {
+                        const quantityInCart = items.reduce((acc, item) => {
+                          if (item.id === product.id || item.id.startsWith(`${product.id}-`)) {
+                            return acc + item.cantidad;
+                          }
+                          return acc;
+                        }, 0);
 
-              {!tiendaAbierta && (
-                <div className="p-3 sm:p-4 bg-orange-50 border border-orange-100 rounded-xl text-orange-800 text-xs sm:text-sm md:text-base font-medium flex items-center gap-2 sm:gap-3">
-                  <Store className="size-4 sm:size-5" />
-                  <span>La tienda se encuentra cerrada en este momento.</span>
-                </div>
-              )}
+                        if (quantityInCart > 0) {
+                          return (
+                            <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 md:left-[220px] md:right-auto bg-green-500 text-white text-xs sm:text-sm font-bold h-6 min-w-6 sm:h-8 sm:min-w-8 px-1.5 sm:px-2 flex items-center justify-center rounded-full border-2 sm:border-4 border-[#F8F9FA] shadow-lg">
+                              {quantityInCart}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>    
+                  </>
+                )
+              ) : null}
             </div>
           </div>
         </div>
@@ -634,65 +613,67 @@ function RelatedProductsCarousel({ products }: { products: Product[] }) {
                   </div>
 
                   {/* Botón de carrito o controles */}
-                  <div className="flex justify-center md:justify-end md:shrink-0">
-                    {tiendaAbierta && (() => {
-                      const cartItem = items.find(item => item.id === relatedProduct.id);
+                  {tiendaAbierta && (
+                    <div className="flex justify-center md:justify-end md:shrink-0">
+                      {(() => {
+                        const cartItem = items.find(item => item.id === relatedProduct.id);
 
-                      if (cartItem) {
+                        if (cartItem) {
+                          return (
+                            <div className="flex items-center gap-5 sm:gap-1 bg-white border-2 border-gray-200 rounded-full px-1 py-1 shadow-sm">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (cartItem.cantidad === 1) {
+                                    removeItem(relatedProduct.id);
+                                  } else {
+                                    updateQuantity(relatedProduct.id, cartItem.cantidad - 1);
+                                  }
+                                }}
+                                className="bg-red-500 text-white size-6 sm:size-7 rounded-full hover:bg-red-600 transition-colors flex items-center justify-center"
+                              >
+                                {cartItem.cantidad === 1 ? (
+                                  <Trash2 className="size-3 sm:size-3.5" />
+                                ) : (
+                                  <Minus className="size-3 sm:size-3.5" />
+                                )}
+                              </button>
+                              <span className="text-sm sm:text-base font-bold text-darkblue px-2 min-w-6 text-center">
+                                {cartItem.cantidad}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  updateQuantity(relatedProduct.id, cartItem.cantidad + 1);
+                                }}
+                                className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors flex items-center justify-center"
+                              >
+                                <Plus className="size-3 sm:size-3.5" />
+                              </button>
+                            </div>
+                          );
+                        }
+
                         return (
-                          <div className="flex items-center gap-5 sm:gap-1 bg-white border-2 border-gray-200 rounded-full px-1 py-1 shadow-sm">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (cartItem.cantidad === 1) {
-                                  removeItem(relatedProduct.id);
-                                } else {
-                                  updateQuantity(relatedProduct.id, cartItem.cantidad - 1);
-                                }
-                              }}
-                              className="bg-red-500 text-white size-6 sm:size-7 rounded-full hover:bg-red-600 transition-colors flex items-center justify-center"
-                            >
-                              {cartItem.cantidad === 1 ? (
-                                <Trash2 className="size-3 sm:size-3.5" />
-                              ) : (
-                                <Minus className="size-3 sm:size-3.5" />
-                              )}
-                            </button>
-                            <span className="text-sm sm:text-base font-bold text-darkblue px-2 min-w-6 text-center">
-                              {cartItem.cantidad}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                updateQuantity(relatedProduct.id, cartItem.cantidad + 1);
-                              }}
-                              className="bg-amber-500 text-white size-6 sm:size-7 rounded-full hover:bg-amber-600 transition-colors flex items-center justify-center"
-                            >
-                              <Plus className="size-3 sm:size-3.5" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (relatedProduct.tipo_unidad === 'kilogramo') {
+                                setSelectedProduct(relatedProduct);
+                              } else {
+                                addItem(relatedProduct);
+                              }
+                            }}
+                            className="bg-primary text-white px-3 py-2.5 sm:p-2 rounded-full sm:rounded-full shadow-md hover:bg-primary/90 transition-colors shrink-0 inline-flex items-center gap-1.5 sm:gap-0"
+                            aria-label="Agregar al carrito"
+                          >
+                            <ShoppingCart className="size-3.5 sm:size-4 md:size-5" />
+                            <span className="text-xs font-semibold sm:hidden">Agregar</span>
+                          </button>
                         );
-                      }
-
-                      return (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (relatedProduct.tipo_unidad === 'kilogramo') {
-                              setSelectedProduct(relatedProduct);
-                            } else {
-                              addItem(relatedProduct);
-                            }
-                          }}
-                          className="bg-primary text-white px-3 py-2.5 sm:p-2 rounded-full sm:rounded-full shadow-md hover:bg-primary/90 transition-colors shrink-0 inline-flex items-center gap-1.5 sm:gap-0"
-                          aria-label="Agregar al carrito"
-                        >
-                          <ShoppingCart className="size-3.5 sm:size-4 md:size-5" />
-                          <span className="text-xs font-semibold sm:hidden">Agregar</span>
-                        </button>
-                      );
-                    })()}
-                  </div>
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
