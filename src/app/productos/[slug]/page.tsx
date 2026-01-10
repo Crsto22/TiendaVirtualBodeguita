@@ -548,14 +548,14 @@ function RelatedProductsCarousel({ products }: { products: Product[] }) {
           >
             <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[260px] sm:h-[280px] md:h-[340px] flex flex-col group-hover:scale-[1.02] ${relatedProduct.stock === 0 ? 'opacity-60' : ''}`}>
               {/* Image Container */}
-              <div className="relative h-[120px] sm:h-[140px] md:h-[180px] bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
+              <div className="relative h-[120px] sm:h-[140px] md:h-[180px] overflow-hidden p-2">
                 {relatedProduct.imagen ? (
                   <Image
                     src={relatedProduct.imagen}
                     alt={relatedProduct.nombre}
                     fill
                     sizes="(max-width: 640px) 150px, (max-width: 768px) 160px, (max-width: 1024px) 200px, 220px"
-                    className={relatedProduct.stock === 0 ? 'grayscale' : ''}
+                    className={`object-contain transition-transform duration-500 group-hover:scale-105 ${relatedProduct.stock === 0 ? 'grayscale' : ''}`}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-200">

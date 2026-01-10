@@ -388,84 +388,98 @@ export default function BuscarPage() {
               </div>
             ) : (
               // Lista de Resultados
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
                 {results.map((product) => (
-                  <Link
-                    key={product.id}
-                    href={`/productos/${product.producto_web}`}
-                    className="group bg-white rounded-2xl border border-gray-100 p-4 flex gap-4 items-start relative overflow-hidden"
-                  >
+                  <div key={product.id}>
+                    <Link
+                      href={`/productos/${product.producto_web}`}
+                      className="group"
+                    >
+                      <div
+                        className={`sm:bg-white sm:rounded-2xl sm:shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-[155px] sm:h-[340px] md:h-[380px] flex sm:flex-col group-hover:scale-[1.02] ${
+                          product.stock === 0 ? "opacity-60" : ""
+                        }`}
+                      >
+                        {/* Image Container */}
+                        <div className="relative w-28 sm:w-full aspect-square overflow-hidden shrink-0 p-2">
+                          {product.imagen ? (
+                            <Image
+                              src={product.imagen}
+                              alt={product.nombre}
+                              fill
+                              className="object-contain"
+                              sizes="(max-width: 640px) 112px, (max-width: 1280px) 33vw, 20vw"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                              <ShoppingCart className="size-8 text-gray-300" />
+                            </div>
+                          )}
 
-
-                    {/* Image Container */}
-                    <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 group-hover:border-primary/20 transition-colors">
-                      {product.imagen ? (
-                        <Image
-                          src={product.imagen}
-                          alt={product.nombre}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <ShoppingCart className="size-8" />
+                          {/* Stock Badge */}
+                          {product.stock === 0 && (
+                            <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                              <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                Agotado
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 z-10 flex flex-col justify-between h-full min-h-[6rem]">
-                      <div>
-                        {/* Tags / Badges */}
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {/* Content */}
+                        <div className="flex flex-col flex-1 p-2 sm:p-3">
+                          {/* Category Badge */}
                           {product.categoria_nombre && (
-                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-100 bg-blue-50 text-blue-600 font-medium rounded-md max-w-[120px] truncate">
+                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-100 bg-blue-50 text-blue-600 font-medium rounded-md max-w-[120px] truncate mb-2 w-fit">
                               {product.categoria_nombre}
                             </Badge>
                           )}
-                          {product.retornable && (
-                            <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                              <Recycle className="size-3" />
-                              Retornable
-                            </span>
-                          )}
-                        </div>
 
-                        {/* Product Title */}
-                        <h3 className="font-bold text-sm md:text-base text-gray-800 leading-snug group-hover:text-primary transition-colors line-clamp-2 mb-1">
-                          {capitalizeText(product.nombre)}
-                        </h3>
+                          {/* Product Title */}
+                          <h3 className="font-bold text-xs sm:text-sm text-gray-800 leading-snug line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                            {capitalizeText(product.nombre)}
+                          </h3>
 
-                        {/* Unit Info */}
-                        <p className="text-xs text-gray-400 font-medium">
-                          {product.tipo_unidad === 'kilogramo' ? 'Precio por kilogramo' : 'Precio por unidad'}
-                        </p>
-                      </div>
+                          {/* Unit Info */}
+                          <p className="text-[10px] sm:text-xs text-gray-400 font-medium mb-2">
+                            {product.tipo_unidad === 'kilogramo' ? 'Precio por kilogramo' : 'Precio por unidad'}
+                          </p>
 
-                      {/* Price Section */}
-                      <div className="mt-3 flex items-end justify-between">
-                        <div className="flex flex-col">
-                          {product.mostrar_precio_web !== false && (
-                            <>
-                              <span className="text-xl md:text-2xl font-extrabold text-primary tracking-tight">
-                                S/ {(product.precio || 0).toFixed(2)}
-                              </span>
-                              {product.has_precio_alternativo && product.precio_alternativo && (
-                                <span className="text-xs text-gray-400 line-through decoration-red-300">
-                                  S/ {product.precio_alternativo.toFixed(2)}
-                                </span>
+                          {/* Price and Action */}
+                          <div className="mt-auto flex items-end justify-between">
+                            <div className="flex flex-col">
+                              {product.mostrar_precio_web !== false && (
+                                <>
+                                  <span className="text-xl sm:text-lg md:text-xl font-bold text-primary truncate">
+                                    S/ {(product.precio || 0).toFixed(2)}
+                                  </span>
+                                  {product.has_precio_alternativo && product.precio_alternativo && (
+                                    <span className="text-[10px] sm:text-xs text-gray-400 line-through decoration-red-300">
+                                      S/ {product.precio_alternativo.toFixed(2)}
+                                    </span>
+                                  )}
+                                </>
                               )}
-                            </>
+                            </div>
+
+                            {/* Action Icon */}
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all">
+                              <ArrowRight className="size-3.5 sm:size-4" />
+                            </div>
+                          </div>
+
+                          {/* Retornable Badge */}
+                          {product.retornable && (
+                            <div className="mt-2 flex items-center gap-1 text-green-600">
+                              <Recycle className="size-3" />
+                              <span className="text-[10px] font-semibold">Retornable</span>
+                            </div>
                           )}
                         </div>
-
-                        {/* Action Icon (Visual only) */}
-                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white">
-                          <ArrowRight className="size-4" />
-                        </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                    <div className="border-b rounded-full border-gray-200 sm:border-none mt-2"></div>
+                  </div>
                 ))}
               </div>
             )}

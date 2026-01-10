@@ -242,9 +242,10 @@ export function Navbar() {
             ) : (
               <Button
                 disabled
+                aria-label="Tienda cerrada temporalmente"
                 className="bg-red-400 cursor-not-allowed text-white font-semibold rounded-full px-4 py-2 flex items-center gap-2"
               >
-                <span className="text-xs md:text-base ">TIENDA CERRADA </span>
+                <span className="text-xs md:text-base" aria-hidden="true">CERRADA</span>
                 <X className="size-6!" />
               </Button>
             )}
@@ -252,7 +253,7 @@ export function Navbar() {
         </div>
 
         {/* Segunda fila: Categorías de Productos - Solo Desktop */}
-        <div className="hidden md:flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
+        <div className="hidden md:flex items-center justify-between pt-3 mt-3">
           {/* Categorías Dropdown - Desktop */}
           <div
             className="relative"
@@ -261,7 +262,7 @@ export function Navbar() {
           >
             <Button
               variant="outline"
-              className="flex items-center gap-2 text-darkblue font-semibold rounded-full border-none cursor-pointer hover:bg-white px-6 py-2 transition-colors"
+              className="flex items-center gap-2 shadow-none text-darkblue font-semibold border-none cursor-pointer hover:bg-white px-6 py-2 transition-colors"
             >
               Categorías de Productos
               <ChevronDown className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />

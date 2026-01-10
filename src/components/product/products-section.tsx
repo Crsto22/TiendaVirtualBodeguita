@@ -136,9 +136,9 @@ function CategoryCarousel({ category }: { category: Category }) {
               href={`/productos/${product.producto_web}`}
               className="group shrink-0"
             >
-              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
+              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[320px] sm:h-[340px] md:h-[380px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                 {/* Image Container */}
-                <div className="relative w-full aspect-square bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-square bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden shrink-0">
                   {product.imagen ? (
                     <Image
                       src={product.imagen}
