@@ -454,8 +454,8 @@ export default function BuscarPage() {
                                     S/ {(product.precio || 0).toFixed(2)}
                                   </span>
                                   {product.has_precio_alternativo && product.precio_alternativo && (
-                                    <span className="text-[10px] sm:text-xs text-gray-400 line-through decoration-red-300">
-                                      S/ {product.precio_alternativo.toFixed(2)}
+                                    <span className="text-[10px] sm:text-xs text-gray-500 truncate">
+                                      {product.motivo_precio_alternativo}: S/ {product.precio_alternativo.toFixed(2)}
                                     </span>
                                   )}
                                 </>

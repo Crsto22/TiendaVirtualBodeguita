@@ -136,7 +136,7 @@ function CategoryCarousel({ category }: { category: Category }) {
               href={`/productos/${product.producto_web}`}
               className="group shrink-0"
             >
-              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[320px] sm:h-[340px] md:h-[380px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
+              <div className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden w-[150px] sm:w-40 md:w-[200px] lg:w-[220px] h-[290px] sm:h-[325px] md:h-[360px] flex flex-col group-hover:scale-[1.02] ${product.stock === 0 ? 'opacity-60' : ''}`}>
                 {/* Image Container */}
                 <div className="relative w-full aspect-square bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden shrink-0">
                   {product.imagen ? (
@@ -169,12 +169,12 @@ function CategoryCarousel({ category }: { category: Category }) {
                 {/* Product Info */}
                 <div className="flex flex-col flex-1 p-2 sm:p-3 md:p-4">
                   {/* Product Name */}
-                  <h3 className="text-xs sm:text-sm md:text-base font-semibold text-darkblue mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+                  <h3 className="text-xs sm:text-sm md:text-base font-semibold text-darkblue mb-0.5 sm:mb-1 line-clamp-2 group-hover:text-primary transition-colors">
                     {capitalizeText(product.nombre)}
                   </h3>
 
                   {/* Unit Type */}
-                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2 flex items-center gap-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-0.5 sm:mb-1.5 flex items-center gap-1">
                     <span>{product.tipo_unidad === 'kilogramo' ? 'Por kg' : 'Unidad'}</span>
                     {product.retornable && (
                       <span className="text-secondary font-semibold flex items-center gap-0.5">
@@ -185,12 +185,12 @@ function CategoryCarousel({ category }: { category: Category }) {
                   </p>
 
                   {/* Price and Cart Container */}
-                  <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-1">
+                  <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 md:gap-1">
                     {/* Precio */}
                     <div className="flex flex-col min-w-0">
                       {product.mostrar_precio_web !== false && (
                         <>
-                          <span className="text-base sm:text-lg md:text-xl font-bold text-primary truncate">
+                          <span className="text-sm sm:text-lg md:text-xl font-bold text-primary truncate">
                             S/ {(product.precio || 0).toFixed(2)}
                           </span>
                           {product.has_precio_alternativo && product.precio_alternativo && (
