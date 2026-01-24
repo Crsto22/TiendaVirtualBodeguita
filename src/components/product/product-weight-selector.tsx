@@ -236,7 +236,6 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                         onChange={(e) => setMonto(e.target.value)}
                                         className="w-full text-center text-5xl md:text-5xl  font-bold h-auto border-none shadow-none focus-visible:ring-0 p-0 placeholder:text-slate-200 text-slate-800 bg-transparent"
                                         placeholder="0.00"
-                                        autoFocus
                                     />
                                 </div>
                                 <div className="h-0.5 w-1/2 bg-slate-100 mx-auto mt-2 group-focus-within:bg-primary/50 transition-colors" />
@@ -291,7 +290,6 @@ export function ProductWeightSelector({ product, isOpen, onClose }: ProductWeigh
                                     onChange={(e) => setPeso(e.target.value)}
                                     className="w-32 md:w-40 lg:w-48 text-center text-4xl md:text-5xl  font-bold h-auto border-none shadow-none focus-visible:ring-0 p-0 placeholder:text-slate-200 text-slate-800 bg-transparent"
                                     placeholder="0"
-                                    autoFocus
                                 />
                                 <div className="pb-3 md:pb-4">
                                     <select

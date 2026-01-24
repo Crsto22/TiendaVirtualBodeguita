@@ -84,10 +84,7 @@ export function OrderItem({
         };
 
         // Include stock_disponible update if partial stock and not set
-        if (
-            isPartialStock &&
-            (item.stock_disponible === undefined || item.stock_disponible === null)
-        ) {
+        if (isPartialStock && !item.stock_disponible) {
             updates.stock_disponible = item.cantidad_final;
         }
 
@@ -197,12 +194,12 @@ export function OrderItem({
                         <div className="flex items-end justify-between mt-2 sm:mt-0">
                             {/* Control de Cantidad */}
                             <div className="flex flex-col">
-                                {isEditing && item.tipo_unidad !== "kilogramo" ? (
+                                {isEditing && item.tipo_unidad !== "kilogramo" && !isSinStock ? (
                                     <div className="flex items-center gap-3 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200">
                                         <button
                                             onClick={() => handleQtyChange(-1)}
-                                            disabled={currentQty <= 1}
-                                            className="p-1 hover:bg-gray-200 rounded-full disabled:opacity-30"
+                                            disabled={currentQty <= 1 || isPartialStock}
+                                            className="p-1 hover:bg-gray-200 rounded-full disabled:opacity-30 disabled:cursor-not-allowed"
                                         >
                                             <Minus className="size-3.5 text-gray-600" />
                                         </button>
@@ -211,7 +208,7 @@ export function OrderItem({
                                         </span>
                                         <button
                                             onClick={() => handleQtyChange(1)}
-                                            disabled={currentQty >= maxQty}
+                                            disabled={currentQty >= maxQty || isPartialStock}
                                             className="p-1 hover:bg-gray-200 rounded-full disabled:opacity-30 disabled:cursor-not-allowed"
                                         >
                                             <Plus className="size-3.5 text-gray-600" />

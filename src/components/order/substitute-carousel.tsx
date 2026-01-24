@@ -261,7 +261,7 @@ export function SubstituteCarousel({
                                     <div className="mt-auto flex flex-col gap-2">
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-sm font-bold text-blue-600">
-                                                S/ {(subItem.precio_final ?? subItem.precio_base ?? 0).toFixed(2)}
+                                                S/ {(subItem.precio_base ?? 0).toFixed(2)}
                                             </span>
                                             {!esPropouestaFija && (
                                                 <span className="text-[10px] text-gray-500">

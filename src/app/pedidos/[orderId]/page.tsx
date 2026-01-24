@@ -48,6 +48,11 @@ import { SubstituteCarousel } from "@/components/order/substitute-carousel";
 import { OrderItem } from "@/components/order/order-item";
 import { OrderItem as IOrderItem } from "@/types/order";
 
+// Función para redondear el total a múltiplos de 0.10
+function redondearTotal(total: number): number {
+  return Math.round(total * 10) / 10;
+}
+
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -190,26 +195,27 @@ export default function OrderDetailPage() {
       if (canceledItems[i.itemId]) return; // Cancelado
 
       if (i.estado_item === "stock_parcial") {
-        currentTotal += (Number(i.precio_final) || 0); // Precio del parcial
-        // Sumar sustitutos
+        // Sumar el parcial aceptado
+        currentTotal += (Number(i.precio_base) || 0) * (i.cantidad_final || 0);
+        // Sumar sustitutos seleccionados
         const selections = substituteSelections[i.itemId] || {};
         const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === i.itemId);
         Object.entries(selections).forEach(([subId, qty]) => {
           const sub = subs.find(s => s.itemId === subId);
-          if (sub) currentTotal += (Number(sub.precio_final) || 0);
+          if (sub) currentTotal += (Number(sub.precio_base) || 0) * qty;
         });
       } else if (i.estado_item === "sin_stock") {
-        // Solo sustitutos
+        // Solo sustitutos seleccionados
         const selections = substituteSelections[i.itemId] || {};
         const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === i.itemId);
         Object.entries(selections).forEach(([subId, qty]) => {
           const sub = subs.find(s => s.itemId === subId);
-          if (sub) currentTotal += (Number(sub.precio_final) || 0);
+          if (sub) currentTotal += (Number(sub.precio_base) || 0) * qty;
         });
       } else {
+        // Item normal
         const unitPrice = (i.precio_helada && i.cantidad_helada > 0) ? Number(i.precio_helada) : Number(i.precio_base);
-        const pFinal = i.precio_final !== undefined && i.precio_final !== null ? i.precio_final : (unitPrice * Number(i.cantidad_solicitada));
-        currentTotal += (Number(pFinal) || 0);
+        currentTotal += unitPrice * Number(i.cantidad_solicitada);
       }
     });
     return currentTotal;
@@ -354,18 +360,20 @@ export default function OrderDetailPage() {
               const finalQty = selections[subID];
 
               if (subItem && finalQty > 0) {
+                // Calcular precio_final basado en cantidad seleccionada × precio_base
+                const precioCalculado = (Number(subItem.precio_base) || 0) * finalQty;
                 const newItem = {
                   ...subItem,
                   // Si es el primer sustituto, podríamos heredar el ID para mantener traza, pero mejor IDs nuevos limpios
                   itemId: index === 0 ? item.itemId : `sub-${item.itemId}-${Date.now()}-${index}`,
                   cantidad_solicitada: finalQty,
-                  precio_final: Number(subItem.precio_final) || 0, // USAMOS PRECIO FINAL que ya incluye el total
+                  precio_final: precioCalculado,
                   es_sustituto: false,
                   sustituye_a: undefined,
                 };
                 delete (newItem as any).sustituye_a;
                 newItems.push(newItem);
-                newTotal += (Number(newItem.precio_final) || 0);
+                newTotal += precioCalculado;
               }
             });
           } else {
@@ -389,17 +397,19 @@ export default function OrderDetailPage() {
           Object.entries(selections).forEach(([subID, finalQty]) => {
             const subItem = substitutes.find(s => s.itemId === subID);
             if (subItem && finalQty > 0) {
+              // Calcular precio_final basado en cantidad seleccionada × precio_base
+              const precioCalculado = (Number(subItem.precio_base) || 0) * finalQty;
               const newSubItem = {
                 ...subItem,
                 itemId: `sub-${item.itemId}-${Date.now()}-${subID}`,
                 cantidad_solicitada: finalQty,
-                precio_final: Number(subItem.precio_final) || 0, // USAMOS PRECIO FINAL que ya incluye el total
+                precio_final: precioCalculado,
                 es_sustituto: false,
                 sustituye_a: undefined,
               };
               delete (newSubItem as any).sustituye_a;
               newItems.push(newSubItem);
-              newTotal += (Number(newSubItem.precio_final) || 0);
+              newTotal += precioCalculado;
             }
           });
         }
@@ -421,8 +431,9 @@ export default function OrderDetailPage() {
       // Validar monto si es efectivo
       if (revisionPaymentMethod === "efectivo") {
         const pagoCon = parseFloat(revisionPagaCon);
-        if (isNaN(pagoCon) || pagoCon < newTotal) {
-          toast.error(`El monto con el que pagas debe ser mayor o igual al total (S/ ${newTotal.toFixed(2)})`);
+        const totalRedondeado = redondearTotal(newTotal);
+        if (isNaN(pagoCon) || pagoCon < totalRedondeado) {
+          toast.error(`El monto con el que pagas debe ser mayor o igual al total (S/ ${totalRedondeado.toFixed(2)})`);
           setLoading(false);
           return;
         }
@@ -436,11 +447,14 @@ export default function OrderDetailPage() {
         return acc;
       }, 0);
 
+      // Aplicar redondeo al total final
+      const totalRedondeado = redondearTotal(newTotal);
+
       // Actualizar Firestore
       const orderRef = doc(db, "pedidos", order.orderId);
       await updateDoc(orderRef, {
         items: newItems,
-        total_final: newTotal,
+        total_final: totalRedondeado,
         envases_retornables: newEnvasesRetornables,
         estado: "confirmada",
         requiere_confirmacion: false,
@@ -448,8 +462,8 @@ export default function OrderDetailPage() {
         "pago.metodo": revisionPaymentMethod,
         "pago.monto_paga_con": revisionPaymentMethod === "efectivo" ? parseFloat(revisionPagaCon) : null,
         "pago.rechazo_vuelto": false, // Resetear el rechazo al enviar corrección
-        // Recalcular vuelto si es efectivo
-        vuelto: revisionPaymentMethod === "efectivo" ? (parseFloat(revisionPagaCon) - newTotal) : null,
+        // Recalcular vuelto si es efectivo (usando total redondeado)
+        vuelto: revisionPaymentMethod === "efectivo" ? (parseFloat(revisionPagaCon) - totalRedondeado) : null,
         historial: [
           ...order.historial,
           {
@@ -932,6 +946,34 @@ export default function OrderDetailPage() {
 
                   {/* Detalles de pago */}
                   <div className="space-y-3 text-sm">
+                    {(() => {
+                      const subtotal = order.total_final || order.total_estimado;
+                      const totalRedondeado = redondearTotal(subtotal);
+                      const ajusteRedondeo = totalRedondeado - subtotal;
+                      const mostrarDesglose = subtotal > 0;
+                      
+                      return (
+                        <>
+                          {/* Siempre mostrar subtotal si hay un total válido, excepto en esperando_confirmacion */}
+                          {mostrarDesglose && order.estado !== "esperando_confirmacion" && (
+                            <div className="flex justify-between items-center text-gray-600">
+                              <span>Subtotal productos</span>
+                              <span className="font-medium text-gray-900">S/ {subtotal.toFixed(2)}</span>
+                            </div>
+                          )}
+                          
+                          {/* Mostrar redondeo si existe ajuste */}
+                          {ajusteRedondeo !== 0 && subtotal > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500">Ajuste por redondeo</span>
+                              <span className={`font-semibold ${ajusteRedondeo > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                {ajusteRedondeo > 0 ? '+' : ''}S/ {ajusteRedondeo.toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                     {order.pago?.metodo && (
                       <div className="flex justify-between items-center text-gray-600">
                         <span>Método</span>
@@ -978,22 +1020,36 @@ export default function OrderDetailPage() {
 
                   {/* Total Grande */}
                   <div className="pt-4 border-t border-gray-100 mt-2">
-                    <div className="flex justify-between items-end">
-                      <span className="text-gray-500 font-medium text-sm mb-1">
-                        {order.total_final && order.total_final > 0 ? "Total" : "Total Estimado"}
-                      </span>
-                      <span className="text-3xl font-bold text-gray-900 tracking-tight">
-                        {(order.total_final === 0 && order.total_estimado === 0 && order.items.some(i => i.mostrar_precio_web === false && !i.is_recovered_price && (!i.precio_final || i.precio_final === 0)))
-                          ? <span className="text-xl text-orange-500">Por confirmar</span>
-                          : `S/ ${(order.total_final && order.total_final > 0 ? order.total_final : order.total_estimado).toFixed(2)}`
-                        }
-                      </span>
-                    </div>
-                    {order.requiere_confirmacion && (
-                      <p className="text-xs text-orange-600 mt-2 flex items-start gap-1.5 bg-orange-50 p-2 rounded-lg border border-orange-100">
-                        <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
-                        El precio final podría variar tras la revisión.
-                      </p>
+                    {order.estado === "esperando_confirmacion" ? (
+                      /* Mostrar solo "Total tras cambios" en tiempo real */
+                      <div className="flex justify-between items-end">
+                        <span className="text-orange-700 font-semibold text-sm mb-1">
+                          Total tras cambios
+                        </span>
+                        <span className="text-3xl font-bold text-orange-600 tracking-tight">
+                          S/ {calculateRevisionTotal().toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-end">
+                          <span className="text-gray-500 font-medium text-sm mb-1">
+                            {order.total_final && order.total_final > 0 ? "Total" : "Total Estimado"}
+                          </span>
+                          <span className="text-3xl font-bold text-gray-900 tracking-tight">
+                            {(order.total_final === 0 && order.total_estimado === 0 && order.items.some(i => i.mostrar_precio_web === false && !i.is_recovered_price && (!i.precio_final || i.precio_final === 0)))
+                              ? <span className="text-xl text-orange-500">Por confirmar</span>
+                              : `S/ ${redondearTotal(order.total_final && order.total_final > 0 ? order.total_final : order.total_estimado).toFixed(2)}`
+                            }
+                          </span>
+                        </div>
+                        {order.requiere_confirmacion && (
+                          <p className="text-xs text-darkblue mt-2 flex items-start gap-1.5 bg-gray-100 p-2 rounded-lg border border-gray-200">
+                            <AlertCircle className="size-3.5 shrink-0 mt-0.5 text-red-500" />
+                            El precio final podría variar tras la revisión.
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1002,15 +1058,6 @@ export default function OrderDetailPage() {
                 {/* Botón de Confirmar Cambios (Revisión) */}
                 {order.estado === "esperando_confirmacion" && (
                   <div className="hidden lg:block bg-gradient-to-b from-orange-50 to-white p-4 border-t border-orange-100">
-
-                    {/* Total Estimado Dinámico */}
-                    <div className="flex justify-between items-center mb-4 px-1">
-                      <span className="text-sm font-medium text-orange-800">Total tras cambios:</span>
-                      <span className="text-xl font-bold text-orange-600">
-                        S/ {calculateRevisionTotal().toFixed(2)}
-                      </span>
-                    </div>
-
                     <Button
                       onClick={handleAcceptRevision}
                       className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 rounded-xl shadow-lg shadow-orange-500/20 font-bold tracking-wide transition-all active:scale-[0.98]"
@@ -1073,7 +1120,7 @@ export default function OrderDetailPage() {
             <p className="text-xl font-extrabold text-slate-900">
               {(order.estado !== "esperando_confirmacion" && order.total_final === 0 && order.total_estimado === 0 && order.items.some(i => i.mostrar_precio_web === false && !i.is_recovered_price && (!i.precio_final || i.precio_final === 0)))
                 ? <span className="text-lg text-orange-500">Por confirmar</span>
-                : `S/ ${(order.estado === "esperando_confirmacion" ? calculateRevisionTotal() : (order.total_final || order.total_estimado)).toFixed(2)}`
+                : `S/ ${(order.estado === "esperando_confirmacion" ? calculateRevisionTotal() : redondearTotal(order.total_final || order.total_estimado)).toFixed(2)}`
               }
             </p>
           </div>
@@ -1111,7 +1158,7 @@ export default function OrderDetailPage() {
       {/* Modal de Pago Rechazado */}
       <PaymentRejectedModal
         isOpen={isPaymentRejected}
-        total={Math.abs(calculateRevisionTotal() - 0.01) > 0.01 ? calculateRevisionTotal() : (order.total_final || order.total_estimado)}
+        total={Math.abs(calculateRevisionTotal() - 0.01) > 0.01 ? calculateRevisionTotal() : redondearTotal(order.total_final || order.total_estimado)}
         paymentMethod={revisionPaymentMethod}
         payAmount={revisionPagaCon}
         isFullPayment={pagoCompletoRevision}
@@ -1140,10 +1187,10 @@ export default function OrderDetailPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 w-full mt-2">
-                <Button variant="outline" onClick={() => setItemToDelete(null)} className="w-full h-11 rounded-xl">
+                <Button variant="outline" onClick={() => setItemToDelete(null)} className="w-full h-11 rounded-xl border-gray-200 cursor-pointer">
                   Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleConfirmDeleteItem} className="w-full bg-red-500 hover:bg-red-600 h-11 rounded-xl">
+                <Button variant="destructive" onClick={handleConfirmDeleteItem} className="w-full bg-red-500 hover:bg-red-600 h-11 rounded-xl cursor-pointer">
                   Eliminar
                 </Button>
               </div>

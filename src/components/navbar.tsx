@@ -18,7 +18,7 @@ import { LogoutModal } from "@/components/auth/logout-modal";
 
 export function Navbar() {
   // Store config
-  const { tiendaAbierta } = useStoreConfigContext();
+  const { tiendaAbierta, loading: loadingStoreConfig } = useStoreConfigContext();
   
   // Zustand store - Obtener items directamente para forzar re-render
   const items = useCartStore(state => state.items);
@@ -89,6 +89,20 @@ export function Navbar() {
             </Button >
           )}
           
+          {/* Logo centrado - Solo Mobile */}
+          <div className="md:hidden absolute left-1/2 -translate-x-1/2">
+            <Link href="/inicio" className="block hover:opacity-90 transition-opacity">
+              <Image
+                src="/Logo.png"
+                alt="Vanesa Bodeguita"
+                width={90}
+                height={90}
+                className="h-12 w-auto"
+                priority
+              />
+            </Link>
+          </div>
+
           {/* Logo y Buscador - Desktop */}
           <div className="hidden md:flex items-center gap-4 flex-1">
             <Link href="/inicio" className="shrink-0 hover:opacity-90 transition-opacity">
@@ -227,7 +241,13 @@ export function Navbar() {
             )}
 
             {/* Cart Button */}
-            {tiendaAbierta ? (
+            {loadingStoreConfig ? (
+              // Skeleton loader mientras carga el estado de la tienda
+              <div className="flex items-center gap-2 px-4 py-2">
+                <div className="w-6 h-6 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="w-12 h-4 bg-gray-200 rounded animate-pulse hidden md:block"></div>
+              </div>
+            ) : tiendaAbierta ? (
               <Button
                 onClick={openCart}
                 className="text-darkblue bg-white hover:bg-white cursor-pointer px-4 py-2 flex items-center gap-2 relative"

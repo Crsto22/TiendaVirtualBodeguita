@@ -40,6 +40,11 @@ function capitalizeText(text: string): string {
     .join(' ');
 }
 
+// Función para redondear el total a múltiplos de 0.10
+function redondearTotal(total: number): number {
+  return Math.round(total * 10) / 10;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart } = useCartStore();
@@ -87,14 +92,13 @@ export default function CheckoutPage() {
       // Validar efectivo
       if (metodoPago === "efectivo") {
         const montoNumerico = parseFloat(montoPagaCon);
-        const totalAPagar = calculateCartTotal(items);
 
         if (!montoPagaCon || isNaN(montoNumerico)) {
           toast.error("Por favor ingresa el monto con el que pagarás");
           return;
         }
 
-        if (montoNumerico < totalAPagar) {
+        if (montoNumerico < totalRedondeado) {
           toast.error("El monto debe ser mayor o igual al total");
           return;
         }
@@ -106,7 +110,6 @@ export default function CheckoutPage() {
       const orderItems = convertCartItemsToOrderItems(items);
 
       // Calcular totales
-      const totalEstimado = calculateCartTotal(items);
       const envasesRetornables = countReturnableBottles(items);
 
       // Preparar datos de pago - Solo si NO es consulta
@@ -134,7 +137,7 @@ export default function CheckoutPage() {
         },
         pago: pagoData,
         items: orderItems,
-        total_estimado: totalEstimado,
+        total_estimado: totalRedondeado,
         envases_retornables: envasesRetornables,
       });
 
@@ -170,6 +173,8 @@ export default function CheckoutPage() {
     (i.tipo_unidad === "kilogramo" && (i.precio === 0 || i.precio === null))
   );
   const totalAPagar = calculateCartTotal(items);
+  const totalRedondeado = redondearTotal(totalAPagar);
+  const ajusteRedondeo = totalRedondeado - totalAPagar;
   const botellasRetornables = countReturnableBottles(items);
 
   if (items.length === 0) {
@@ -224,7 +229,7 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 pb-32 lg:pb-10">
+      <main className="max-w-5xl mx-auto px-4 py-6 pb-60 lg:pb-10">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
 
           {/* COLUMNA IZQUIERDA: Método de Pago y Detalles (Principal en Desktop) */}
@@ -361,7 +366,7 @@ export default function CheckoutPage() {
                           const nuevoEstado = !pagoCompleto;
                           setPagoCompleto(nuevoEstado);
                           if (nuevoEstado) {
-                            setMontoPagaCon(totalAPagar.toFixed(2));
+                            setMontoPagaCon(totalRedondeado.toFixed(2));
                           } else {
                             setMontoPagaCon("");
                           }
@@ -401,16 +406,16 @@ export default function CheckoutPage() {
 
                     {pagoCompleto && (
                       <p className="text-center text-emerald-600 font-bold text-lg animate-in fade-in">
-                        Pago Completo: S/ {totalAPagar.toFixed(2)}
+                        Pago Completo: S/ {totalRedondeado.toFixed(2)}
                       </p>
                     )}
 
                     {/* Cálculo de vuelto */}
-                    {!pagoCompleto && montoPagaCon && parseFloat(montoPagaCon) >= totalAPagar && (
+                    {!pagoCompleto && montoPagaCon && parseFloat(montoPagaCon) >= totalRedondeado && (
                       <div className="mt-4 flex justify-between items-center border-t border-gray-200 pt-3 border-dashed">
                         <span className="text-sm font-medium text-slate-600">Tu vuelto será:</span>
                         <span className="text-lg font-bold text-emerald-600 bg-emerald-100/50 px-3 py-1 rounded-lg">
-                          S/ {(parseFloat(montoPagaCon) - totalAPagar).toFixed(2)}
+                          S/ {(parseFloat(montoPagaCon) - totalRedondeado).toFixed(2)}
                         </span>
                       </div>
                     )}
@@ -564,10 +569,22 @@ export default function CheckoutPage() {
               {/* Footer del Resumen (Desktop Only - Mobile usa la barra sticky) */}
               <div className="p-5 bg-white border-t border-gray-100 hidden lg:block">
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Subtotal</span>
-                    <span className="font-semibold text-slate-900">S/ {totalAPagar.toFixed(2)}</span>
-                  </div>
+                  {/* Siempre mostrar subtotal si hay productos */}
+                  {items.length > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Subtotal</span>
+                      <span className="font-semibold text-slate-900">S/ {totalAPagar.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {ajusteRedondeo !== 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Redondeo</span>
+                      <span className={`font-semibold ${ajusteRedondeo > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                        {ajusteRedondeo > 0 ? '+' : ''}S/ {ajusteRedondeo.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
 
                   {botellasRetornables > 0 && (
                     <div className="flex justify-between text-sm bg-green-50 p-2 rounded-lg text-green-700">
@@ -577,13 +594,24 @@ export default function CheckoutPage() {
                   )}
 
                   <div className="flex justify-between items-end pt-2 border-t border-dashed border-gray-200">
-                    <span className={`font-bold ${hayProductosSinPrecio ? "text-orange-500" : "text-slate-800"}`}>
-                      {hayProductosSinPrecio ? "Total Estimado" : "Total a Pagar"}
+                    <span className={`font-bold ${hayProductosSinPrecio ? "text-orange-600" : "text-slate-800"}`}>
+                      {hayProductosSinPrecio ? "Total Parcial" : "Total a Pagar"}
                     </span>
                     <span className="text-2xl font-extrabold text-slate-900">
-                      S/ {totalAPagar.toFixed(2)}
+                      S/ {totalRedondeado.toFixed(2)}
                     </span>
                   </div>
+                  
+                  {hayProductosSinPrecio && (
+                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 mt-2.5 shadow-sm">
+                      <div className="flex items-start gap-2">
+                        <Info className="size-4 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                          <span className="font-bold">No incluye productos por consultar.</span> 
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -611,14 +639,59 @@ export default function CheckoutPage() {
 
       {/* BARRA INFERIOR STICKY (SOLO MÓVIL) */}
       {/* Esta barra asegura que el botón de acción principal siempre esté visible en pantallas pequeñas */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 lg:hidden z-30 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] safe-area-pb">
-        <div className="max-w-5xl mx-auto flex gap-4 items-center">
-          <div className="flex-1">
-            <p className="text-xs text-slate-500 font-medium mb-0.5">Total a Pagar</p>
-            <p className="text-xl font-extrabold text-slate-900">S/ {totalAPagar.toFixed(2)}</p>
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 lg:hidden z-30 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] safe-area-pb">
+        <div className="max-w-5xl mx-auto px-4 py-3 space-y-3">
+          {/* Desglose de totales - Siempre mostrar subtotal si hay productos */}
+          <div className="space-y-2 text-sm">
+            {items.length > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Subtotal</span>
+                <span className="font-semibold text-slate-900">S/ {totalAPagar.toFixed(2)}</span>
+              </div>
+            )}
+            
+            {ajusteRedondeo !== 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Redondeo</span>
+                <span className={`font-semibold ${ajusteRedondeo > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                  {ajusteRedondeo > 0 ? '+' : ''}S/ {ajusteRedondeo.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            {botellasRetornables > 0 && (
+              <div className="flex justify-between items-center bg-green-50 px-2 py-1.5 rounded-lg">
+                <span className="flex items-center gap-1.5 text-green-700 text-xs">
+                  <Recycle className="size-3.5" /> Retornables
+                </span>
+                <span className="font-bold text-green-700 text-xs">{botellasRetornables} u.</span>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
+              <span className={`font-bold ${hayProductosSinPrecio ? "text-orange-600" : "text-slate-800"}`}>
+                {hayProductosSinPrecio ? "Total Parcial" : "Total a Pagar"}
+              </span>
+              <span className="text-xl font-extrabold text-slate-900">
+                S/ {totalRedondeado.toFixed(2)}
+              </span>
+            </div>
+            
+            {hayProductosSinPrecio && (
+                <div className="bg-gray-100 border border-gray-200 rounded-xl p-2.5 shadow-sm">
+                <div className="flex items-start gap-2">
+                  <Info  className="size-3.5 text-red-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-slate-700 leading-snug font-medium">
+                    <span className="font-bold ">No incluye productos por consultar.</span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Botón de acción */}
           <Button
-            className="flex-1 max-w-[200px] bg-slate-900 hover:bg-slate-800 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-slate-200"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-slate-200"
             onClick={handleConfirmarPedido}
             disabled={!hacerPedidos || orderLoading || (!hayProductosSinPrecio && (!metodoPago || (metodoPago === "efectivo" && !montoPagaCon)))}
           >

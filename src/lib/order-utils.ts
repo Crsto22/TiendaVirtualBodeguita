@@ -39,7 +39,7 @@ export function convertCartItemsToOrderItems(
     if (cantidadHelada > 0 && cantidadNormal > 0) {
       const itemHelado = {
         productoId: item.id,
-        nombre: `${item.nombre} (Helada)`,
+        nombre: item.nombre,
         imagen: item.imagen || null,
         tipo_unidad: item.tipo_unidad as "unidad" | "kilogramo",
         cantidad_solicitada: cantidadHelada,
@@ -73,7 +73,7 @@ export function convertCartItemsToOrderItems(
     // Caso 2: Todo helado o Todo normal (o sin opción de frío)
     return [{
       productoId: item.id,
-      nombre: (cantidadHelada > 0 && cantidadHelada === item.cantidad) ? `${item.nombre} (Helada)` : item.nombre,
+      nombre: item.nombre,
       imagen: item.imagen || null,
       tipo_unidad: item.tipo_unidad as "unidad" | "kilogramo",
       cantidad_solicitada: item.cantidad,
