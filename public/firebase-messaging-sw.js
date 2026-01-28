@@ -23,9 +23,10 @@ messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Notificación recibida en background:', payload);
 
     // Intentar obtener título y cuerpo de notification (si existe) o de data (payload data-only)
-    const notificationTitle = payload.notification?.title || payload.data?.title || 'Tienda Bodeguita';
+    // Priorizamos data_title/data_body para evitar duplicados si el navegador intercepta title/body
+    const notificationTitle = payload.data?.data_title || payload.notification?.title || payload.data?.title || 'Tienda Bodeguita';
     const notificationOptions = {
-        body: payload.notification?.body || payload.data?.body || 'Tienes una nueva notificación',
+        body: payload.data?.data_body || payload.notification?.body || payload.data?.body || 'Tienes una nueva notificación',
         icon: '/LogoPWA.png',
         badge: '/LogoPWA.png',
         tag: payload.data?.orderId || 'general',
