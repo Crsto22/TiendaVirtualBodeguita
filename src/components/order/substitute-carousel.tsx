@@ -99,10 +99,10 @@ export function SubstituteCarousel({
                     >
                         <div
                             className={`p-3 rounded-full ${!canceledItems[item.itemId] &&
-                                    (!substituteSelections[item.itemId] ||
-                                        Object.keys(substituteSelections[item.itemId]).length === 0)
-                                    ? "bg-blue-100"
-                                    : "bg-gray-100"
+                                (!substituteSelections[item.itemId] ||
+                                    Object.keys(substituteSelections[item.itemId]).length === 0)
+                                ? "bg-blue-100"
+                                : "bg-gray-100"
                                 }`}
                         >
                             <CheckCircle2 className="size-8" />
@@ -173,12 +173,12 @@ export function SubstituteCarousel({
                     // Detectar si es una propuesta fija (kilogramos con peso/cantidad propuesta)
                     const esPropouestaFija = subItem.peso_propuesto_gramos !== null && subItem.peso_propuesto_gramos !== undefined ||
                         subItem.cantidad_propuesta !== null && subItem.cantidad_propuesta !== undefined;
-                    
+
                     // Obtener la cantidad propuesta (puede ser peso en gramos o unidades)
                     const cantidadPropuesta = subItem.cantidad_propuesta || 1;
-                    const detallePropuesta = subItem.detalle || 
-                        (subItem.peso_propuesto_gramos ? `${subItem.peso_propuesto_gramos}g` : 
-                        (subItem.cantidad_propuesta ? `${subItem.cantidad_propuesta} unids.` : ''));
+                    const detallePropuesta = subItem.detalle ||
+                        (subItem.peso_propuesto_gramos ? `${subItem.peso_propuesto_gramos}g` :
+                            (subItem.cantidad_propuesta ? `${subItem.cantidad_propuesta} unids.` : ''));
 
                     return (
                         <div key={subItem.itemId} className="shrink-0">
@@ -261,7 +261,11 @@ export function SubstituteCarousel({
                                     <div className="mt-auto flex flex-col gap-2">
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-sm font-bold text-blue-600">
-                                                S/ {(subItem.precio_base ?? 0).toFixed(2)}
+                                                {/* Propuesta fija: mostrar precio_final | Normal: mostrar precio_base (unitario) */}
+                                                S/ {esPropouestaFija
+                                                    ? (subItem.precio_final ?? 0).toFixed(2)
+                                                    : (subItem.precio_base ?? 0).toFixed(2)
+                                                }
                                             </span>
                                             {!esPropouestaFija && (
                                                 <span className="text-[10px] text-gray-500">
@@ -332,8 +336,8 @@ export function SubstituteCarousel({
                                                                 toast.error(`Stock máximo disponible: ${maxQty}`);
                                                         }}
                                                         className={`size-6 rounded-full flex items-center justify-center shadow-sm transition-all ${currentQty >= maxQty
-                                                                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                                                                : "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
+                                                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                                            : "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
                                                             }`}
                                                     >
                                                         <Plus className="size-3.5" />

@@ -137,6 +137,7 @@ export interface Order {
   estado: EstadoPedido;
   fecha_creacion: Timestamp | Date;
   fecha_actualizacion: Timestamp | Date;
+  expira_en?: Timestamp | Date | null;
 
   // Información del cliente
   cliente: ClienteInfo;

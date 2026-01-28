@@ -53,6 +53,28 @@ function redondearTotal(total: number): number {
   return Math.round(total * 10) / 10;
 }
 
+// Helper: Verificar si un sustituto es una propuesta fija (tiene cantidad_propuesta o peso_propuesto)
+function esPropouestaFija(subItem: any): boolean {
+  return (subItem.peso_propuesto_gramos !== null && subItem.peso_propuesto_gramos !== undefined) ||
+    (subItem.cantidad_propuesta !== null && subItem.cantidad_propuesta !== undefined);
+}
+
+// Helper: Calcular precio de un sustituto según su tipo
+function calcularPrecioSubstituto(subItem: any, cantidad: number): number {
+  if (esPropouestaFija(subItem)) {
+    return Number(subItem.precio_final) || 0;
+  }
+  return (Number(subItem.precio_base) || 0) * cantidad;
+}
+
+// Helper: Obtener la cantidad final del sustituto
+function obtenerCantidadSubstituto(subItem: any, cantidadSeleccionada: number): number {
+  if (esPropouestaFija(subItem)) {
+    return subItem.cantidad_propuesta || 1;
+  }
+  return cantidadSeleccionada;
+}
+
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -74,6 +96,8 @@ export default function OrderDetailPage() {
   const [revisionPaymentMethod, setRevisionPaymentMethod] = useState<"efectivo" | "yape" | null>(null);
   const [revisionPagaCon, setRevisionPagaCon] = useState<string>("");
   const [pagoCompletoRevision, setPagoCompletoRevision] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const warningShownRef = useRef(false);
 
   const handleUpdateItem = async (itemId: string, updates: Partial<IOrderItem>) => {
     if (!order) return;
@@ -189,37 +213,62 @@ export default function OrderDetailPage() {
   const calculateRevisionTotal = () => {
     if (!order) return 0;
     let currentTotal = 0;
-    order.items.forEach(i => {
-      if (i.es_sustituto) return; // Se suman via logica de seleccion
 
-      if (canceledItems[i.itemId]) return; // Cancelado
+    // Helper interno para sumar sustitutos seleccionados
+    const sumarSubstitutos = (itemId: string) => {
+      const selections = substituteSelections[itemId] || {};
+      const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === itemId);
+      Object.entries(selections).forEach(([subId, qty]) => {
+        const sub = subs.find(s => s.itemId === subId);
+        if (sub && qty > 0) {
+          currentTotal += calcularPrecioSubstituto(sub, qty);
+        }
+      });
+    };
+
+    order.items.forEach(i => {
+      if (i.es_sustituto) return;
+      if (canceledItems[i.itemId]) return;
 
       if (i.estado_item === "stock_parcial") {
-        // Sumar el parcial aceptado
         currentTotal += (Number(i.precio_base) || 0) * (i.cantidad_final || 0);
-        // Sumar sustitutos seleccionados
-        const selections = substituteSelections[i.itemId] || {};
-        const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === i.itemId);
-        Object.entries(selections).forEach(([subId, qty]) => {
-          const sub = subs.find(s => s.itemId === subId);
-          if (sub) currentTotal += (Number(sub.precio_base) || 0) * qty;
-        });
+        sumarSubstitutos(i.itemId);
       } else if (i.estado_item === "sin_stock") {
-        // Solo sustitutos seleccionados
-        const selections = substituteSelections[i.itemId] || {};
-        const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === i.itemId);
-        Object.entries(selections).forEach(([subId, qty]) => {
-          const sub = subs.find(s => s.itemId === subId);
-          if (sub) currentTotal += (Number(sub.precio_base) || 0) * qty;
-        });
+        sumarSubstitutos(i.itemId);
       } else {
-        // Item normal
         const unitPrice = (i.precio_helada && i.cantidad_helada > 0) ? Number(i.precio_helada) : Number(i.precio_base);
         currentTotal += unitPrice * Number(i.cantidad_solicitada);
       }
     });
     return currentTotal;
   };
+
+  // Efecto para calcular el tiempo restante
+  useEffect(() => {
+    if (!order || !order.expira_en) return;
+
+    const calculateTimeRemaining = () => {
+      const now = new Date().getTime();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const expiraEn: any = order.expira_en;
+      const expirationTime = expiraEn.toDate ? expiraEn.toDate().getTime() : new Date(expiraEn).getTime();
+      const remaining = Math.max(0, expirationTime - now);
+
+      if (remaining <= 15000 && remaining > 0 && !warningShownRef.current) {
+        toast.warning("El pedido expirará pronto", {
+          description: "En 15 segundos se cancelará automáticamente el pedido.",
+        });
+        warningShownRef.current = true;
+      }
+
+      setTimeRemaining(remaining);
+    };
+
+    calculateTimeRemaining();
+    const interval = setInterval(calculateTimeRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [order]);
 
   useEffect(() => {
     if (!user) {
@@ -343,31 +392,28 @@ export default function OrderDetailPage() {
           return;
         }
 
-        // Si es SIN STOCK y NO se eligieron sustitutos -> Se elimina por defecto (o se podría preguntar)
-        // Pero si NO canceló explícitamente, y es SIN STOCK, y no eligió nada... es igual a cancelar.
+        // Si es SIN STOCK y NO se eligieron sustitutos -> Se elimina por defecto
         if (item.estado_item === "sin_stock") {
           const selections = substituteSelections[item.itemId] || {};
           const selectedSubIds = Object.keys(selections);
 
           if (selectedSubIds.length > 0) {
-            // El usuario eligió sustitutos para reemplazar el item agotado
-            // Nota: Aquí reemplazamos el item original con N sustitutos.
-            // Para mantener coherencia en IDs, podemos usar itemId original para el PRIMERO y generar nuevos para el resto,
-            // o generar nuevos para todos y descartar el original.
-
+            // Procesar cada sustituto seleccionado
             selectedSubIds.forEach((subID, index) => {
               const subItem = substitutes.find(s => s.itemId === subID);
               const finalQty = selections[subID];
 
               if (subItem && finalQty > 0) {
-                // Calcular precio_final basado en cantidad seleccionada × precio_base
-                const precioCalculado = (Number(subItem.precio_base) || 0) * finalQty;
+                const precioCalculado = calcularPrecioSubstituto(subItem, finalQty);
+                const cantidadFinal = obtenerCantidadSubstituto(subItem, finalQty);
+
                 const newItem = {
                   ...subItem,
-                  // Si es el primer sustituto, podríamos heredar el ID para mantener traza, pero mejor IDs nuevos limpios
                   itemId: index === 0 ? item.itemId : `sub-${item.itemId}-${Date.now()}-${index}`,
-                  cantidad_solicitada: finalQty,
+                  cantidad_solicitada: cantidadFinal,
+                  cantidad_final: cantidadFinal,
                   precio_final: precioCalculado,
+                  estado_item: 'disponible',
                   es_sustituto: false,
                   sustituye_a: undefined,
                 };
@@ -376,34 +422,35 @@ export default function OrderDetailPage() {
                 newTotal += precioCalculado;
               }
             });
-          } else {
-            // Sin stock y sin selecciones -> se elimina
           }
+          // Sin stock y sin selecciones -> se elimina
         }
         else if (item.estado_item === "stock_parcial") {
-          // 1. Agregar el item original con la cantidad reducida (que el usuario ACEPTÓ explícitamente al no cancelar)
+          // 1. Agregar el item original con la cantidad reducida
           const reducedItem = {
             ...item,
             cantidad_solicitada: item.cantidad_final || 0,
             estado_item: 'modificado',
-            // recalculamos precio final por si acaso
             precio_final: (Number(item.precio_base) || 0) * (item.cantidad_final || 0),
           };
           newItems.push(reducedItem);
           newTotal += (Number(reducedItem.precio_final) || 0);
 
-          // 2. Agregar TODOS los sustitutos seleccionados
+          // 2. Agregar sustitutos seleccionados
           const selections = substituteSelections[item.itemId] || {};
           Object.entries(selections).forEach(([subID, finalQty]) => {
             const subItem = substitutes.find(s => s.itemId === subID);
             if (subItem && finalQty > 0) {
-              // Calcular precio_final basado en cantidad seleccionada × precio_base
-              const precioCalculado = (Number(subItem.precio_base) || 0) * finalQty;
+              const precioCalculado = calcularPrecioSubstituto(subItem, finalQty);
+              const cantidadFinal = obtenerCantidadSubstituto(subItem, finalQty);
+
               const newSubItem = {
                 ...subItem,
                 itemId: `sub-${item.itemId}-${Date.now()}-${subID}`,
-                cantidad_solicitada: finalQty,
+                cantidad_solicitada: cantidadFinal,
+                cantidad_final: cantidadFinal,
                 precio_final: precioCalculado,
+                estado_item: 'disponible',
                 es_sustituto: false,
                 sustituye_a: undefined,
               };
@@ -415,7 +462,9 @@ export default function OrderDetailPage() {
         }
         else {
           // Item normal
-          const pFinal = item.precio_final !== undefined && item.precio_final !== null ? item.precio_final : (Number(item.precio_base) * Number(item.cantidad_solicitada));
+          const pFinal = item.precio_final !== undefined && item.precio_final !== null
+            ? item.precio_final
+            : (Number(item.precio_base) * Number(item.cantidad_solicitada));
           newItems.push(item);
           newTotal += (Number(pFinal) || 0);
         }
@@ -457,6 +506,7 @@ export default function OrderDetailPage() {
         total_final: totalRedondeado,
         envases_retornables: newEnvasesRetornables,
         estado: "confirmada",
+        expira_en: null,
         requiere_confirmacion: false,
         "revision.requiere_accion": false,
         "pago.metodo": revisionPaymentMethod,
@@ -517,8 +567,8 @@ export default function OrderDetailPage() {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">{error || "Error"}</h2>
           <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">{errorMessage}</p>
-          <Button 
-            onClick={() => router.push("/inicio")} 
+          <Button
+            onClick={() => router.push("/inicio")}
             className="w-full max-w-xs mx-auto rounded-full h-12 text-base font-semibold"
           >
             <ArrowLeft className="size-4 mr-2" />
@@ -533,6 +583,151 @@ export default function OrderDetailPage() {
   const IconoEstado = estadoConfig.icon;
   const isPaymentRejected = order.pago?.rechazo_vuelto === true;
   const canCancelOrder = order.estado === "pendiente" || order.estado === "esperando_confirmacion" || isPaymentRejected;
+
+  // Formatear el tiempo restante
+  const formatTimeRemaining = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return { minutes, seconds };
+  };
+
+  const { minutes, seconds } = timeRemaining !== null ? formatTimeRemaining(timeRemaining) : { minutes: 0, seconds: 0 };
+
+  const YapePaymentCard = ({ className = "" }: { className?: string }) => {
+    if (!((order.estado === "lista" || order.estado === "preparando") && order.pago?.metodo === "yape")) return null;
+
+    return (
+      <div className={`bg-purple-50 rounded-3xl shadow-lg border border-purple-100 p-6 flex flex-col md:flex-row items-center md:items-start md:justify-between text-center md:text-left transition-all animate-in fade-in slide-in-from-bottom-4 mb-6 ${className}`}>
+        <div className="flex-1">
+          <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+            <div className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm">
+              <Image src="/MetodoPago/Yape.png" alt="Yape" width={20} height={20} className="rounded-sm" />
+            </div>
+            <span className="font-bold text-purple-900">Pago con Yape</span>
+          </div>
+
+          <p className="text-sm font-medium text-purple-800 mb-1">Escanea para pagar a</p>
+          <p className="text-2xl font-extrabold text-[#7c0f8b] mb-4">Yanet Mam*</p>
+
+          <p className="hidden md:block text-sm text-purple-700 bg-purple-100/50 px-4 py-3 rounded-xl max-w-xs">
+            {order.estado === "lista"
+              ? "Muestra el comprobante al recoger tu pedido"
+              : "Puedes ir adelantando tu pago mientras preparamos tu pedido"}
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 relative flex items-center justify-center shrink-0">
+            <QRCodeCanvas
+              id={`yape-qr-canvas-${className.includes('hidden') ? 'desktop' : 'mobile'}`}
+              value="0002010102113932969cde686e395bc6b28b0c3b05efd87a5204561153036045802PE5906YAPERO6004Lima6304BA65"
+              size={512}
+              fgColor="#7c0f8b"
+              level="H"
+              style={{ width: '160px', height: '160px' }}
+              imageSettings={{
+                src: "/MetodoPago/Yape.png",
+                height: 100,
+                width: 100,
+                excavate: true,
+              }}
+            />
+            {/* Overlay visual para consistencia estética */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm pointer-events-none">
+              <Image
+                src="/MetodoPago/Yape.png"
+                alt="Yape"
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+              />
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-purple-700 border-purple-200 hover:bg-purple-100 hover:text-purple-800 h-8 gap-2 bg-white"
+            onClick={() => {
+              const canvasId = `yape-qr-canvas-${className.includes('hidden') ? 'desktop' : 'mobile'}`;
+              const originalCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
+              if (!originalCanvas) return;
+
+              // Crear canvas temporal de alta calidad para la "Tarjeta Yape"
+              const cardCanvas = document.createElement("canvas");
+              cardCanvas.width = 600;
+              cardCanvas.height = 800;
+              const ctx = cardCanvas.getContext("2d");
+              if (!ctx) return;
+
+              // 1. Fondo
+              ctx.fillStyle = "#F3E8FF"; // Purple-50
+              ctx.fillRect(0, 0, cardCanvas.width, cardCanvas.height);
+
+              // 2. Contenedor Blanco Central
+              ctx.fillStyle = "#FFFFFF";
+              ctx.beginPath();
+              // polyfill para roundRect si no existe o usar rect simple con esquinas
+              if (ctx.roundRect) {
+                ctx.roundRect(50, 50, 500, 700, 40);
+              } else {
+                ctx.rect(50, 50, 500, 700);
+              }
+              ctx.fill();
+
+              // Sombra
+              ctx.shadowColor = "rgba(0,0,0,0.1)";
+              ctx.shadowBlur = 20;
+              ctx.fill();
+
+              // 3. Logo Yape / Texto Superior
+              ctx.shadowColor = "transparent";
+              ctx.font = "bold 32px sans-serif";
+              ctx.fillStyle = "#581c87"; // Purple-900
+              ctx.textAlign = "center";
+              ctx.fillText("Pago con Yape", cardCanvas.width / 2, 130);
+
+              // 4. Nombre Destinatario
+              ctx.font = "bold 48px sans-serif";
+              ctx.fillStyle = "#7c0f8b"; // Color Yape
+              ctx.fillText("Yanet Mam*", cardCanvas.width / 2, 200);
+
+              // 5. Dibujar QR
+              const qrSize = 400;
+              const qrX = (cardCanvas.width - qrSize) / 2;
+              const qrY = 250;
+              ctx.drawImage(originalCanvas, qrX, qrY, qrSize, qrSize);
+
+              // 6. Texto Inferior
+              ctx.font = "500 24px sans-serif";
+              ctx.fillStyle = "#6b21a8"; // Purple-800
+              ctx.fillText("Escanea para pagar", cardCanvas.width / 2, 700);
+
+              // Descargar
+              const pngUrl = cardCanvas.toDataURL("image/png");
+              const downloadLink = document.createElement("a");
+              downloadLink.href = pngUrl;
+              downloadLink.download = "Yape_YanetMam.png";
+              document.body.appendChild(downloadLink);
+              downloadLink.click();
+              document.body.removeChild(downloadLink);
+              toast.success("Tarjeta QR descargada");
+            }}
+          >
+            <Download className="size-3.5" />
+            Descargar QR
+          </Button>
+        </div>
+
+        <p className="md:hidden text-xs text-purple-700 bg-purple-100/50 px-3 py-2 rounded-lg w-full mt-4">
+          {order.estado === "lista"
+            ? "Muestra el comprobante al recoger tu pedido"
+            : "Puedes ir adelantando tu pago mientras preparamos tu pedido"}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-32 md:pb-10">
@@ -568,6 +763,24 @@ export default function OrderDetailPage() {
             </Link>
           </div>
 
+
+
+          {/* Cronómetro Central en Navbar */}
+          {order.estado === "esperando_confirmacion" && timeRemaining !== null && timeRemaining > 0 && (
+            <div className={`
+              absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+              flex items-center gap-2 px-4 py-1.5 rounded-full border shadow-sm transition-all duration-300 z-20
+              ${timeRemaining < 60000
+                ? 'bg-red-50 border-red-200 text-red-600'
+                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'}
+            `}>
+              <Clock className={`size-3.5 sm:size-4 ${timeRemaining < 60000 ? 'animate-pulse text-red-500' : 'text-gray-400'}`} />
+              <span className="text-sm font-semibold tabular-nums tracking-wide">
+                {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-col items-end sm:items-center">
             <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Orden #</span>
             <span className="text-sm font-bold text-gray-900 font-mono">{order.numeroOrden}</span>
@@ -582,136 +795,10 @@ export default function OrderDetailPage() {
           {/* COLUMNA IZQUIERDA (Productos) - Ocupa 8/12 en desktop */}
           <div className="lg:col-span-8 space-y-6 order-2 lg:order-1">
 
-            {/* TARJETA DE PAGO YAPE (Ubicada ARRIBA de productos en desktop) */}
-            {(order.estado === "lista" || order.estado === "preparando") && order.pago?.metodo === "yape" && (
-              <div className="bg-purple-50 rounded-3xl shadow-lg border border-purple-100 p-6 flex flex-col md:flex-row items-center md:items-start md:justify-between text-center md:text-left transition-all animate-in fade-in slide-in-from-bottom-4 mb-6">
-                <div className="flex-1">
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-                    <div className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm">
-                      <Image src="/MetodoPago/Yape.png" alt="Yape" width={20} height={20} className="rounded-sm" />
-                    </div>
-                    <span className="font-bold text-purple-900">Pago con Yape</span>
-                  </div>
+            {/* TARJETA DE PAGO YAPE (Desktop: Arriba de productos. Móvil: Se muestra en la columna derecha al inicio) */}
+            <YapePaymentCard className="hidden lg:flex" />
 
-                  <p className="text-sm font-medium text-purple-800 mb-1">Escanea para pagar a</p>
-                  <p className="text-2xl font-extrabold text-[#7c0f8b] mb-4">Yanet Mam*</p>
 
-                  <p className="hidden md:block text-sm text-purple-700 bg-purple-100/50 px-4 py-3 rounded-xl max-w-xs">
-                    {order.estado === "lista"
-                      ? "Muestra el comprobante al recoger tu pedido"
-                      : "Puedes ir adelantando tu pago mientras preparamos tu pedido"}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-center gap-3">
-                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 relative flex items-center justify-center shrink-0">
-                    <QRCodeCanvas
-                      id="yape-qr-canvas"
-                      value="0002010102113932969cde686e395bc6b28b0c3b05efd87a5204561153036045802PE5906YAPERO6004Lima6304BA65"
-                      size={512}
-                      fgColor="#7c0f8b"
-                      level="H"
-                      style={{ width: '160px', height: '160px' }}
-                      imageSettings={{
-                        src: "/MetodoPago/Yape.png",
-                        height: 100,
-                        width: 100,
-                        excavate: true,
-                      }}
-                    />
-                    {/* Overlay visual para consistencia estética */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm pointer-events-none">
-                      <Image
-                        src="/MetodoPago/Yape.png"
-                        alt="Yape"
-                        width={32}
-                        height={32}
-                        className="rounded-full object-cover"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-purple-700 border-purple-200 hover:bg-purple-100 hover:text-purple-800 h-8 gap-2 bg-white"
-                    onClick={() => {
-                      const originalCanvas = document.getElementById("yape-qr-canvas") as HTMLCanvasElement;
-                      if (!originalCanvas) return;
-
-                      // Crear canvas temporal de alta calidad para la "Tarjeta Yape"
-                      const cardCanvas = document.createElement("canvas");
-                      cardCanvas.width = 600;
-                      cardCanvas.height = 800;
-                      const ctx = cardCanvas.getContext("2d");
-                      if (!ctx) return;
-
-                      // 1. Fondo
-                      ctx.fillStyle = "#F3E8FF"; // Purple-50
-                      ctx.fillRect(0, 0, cardCanvas.width, cardCanvas.height);
-
-                      // 2. Contenedor Blanco Central
-                      ctx.fillStyle = "#FFFFFF";
-                      ctx.beginPath();
-                      // polyfill para roundRect si no existe o usar rect simple con esquinas
-                      if (ctx.roundRect) {
-                        ctx.roundRect(50, 50, 500, 700, 40);
-                      } else {
-                        ctx.rect(50, 50, 500, 700);
-                      }
-                      ctx.fill();
-
-                      // Sombra
-                      ctx.shadowColor = "rgba(0,0,0,0.1)";
-                      ctx.shadowBlur = 20;
-                      ctx.fill();
-
-                      // 3. Logo Yape / Texto Superior
-                      ctx.shadowBlur = 0; // Reset shadow for text
-                      ctx.font = "bold 32px sans-serif";
-                      ctx.fillStyle = "#581c87"; // Purple-900
-                      ctx.textAlign = "center";
-                      ctx.fillText("Pago con Yape", cardCanvas.width / 2, 130);
-
-                      // 4. Nombre Destinatario
-                      ctx.font = "bold 48px sans-serif";
-                      ctx.fillStyle = "#7c0f8b"; // Color Yape
-                      ctx.fillText("Yanet Mam*", cardCanvas.width / 2, 200);
-
-                      // 5. Dibujar QR
-                      const qrSize = 400;
-                      const qrX = (cardCanvas.width - qrSize) / 2;
-                      const qrY = 250;
-                      ctx.drawImage(originalCanvas, qrX, qrY, qrSize, qrSize);
-
-                      // 6. Texto Inferior
-                      ctx.font = "500 24px sans-serif";
-                      ctx.fillStyle = "#6b21a8"; // Purple-800
-                      ctx.fillText("Escanea para pagar", cardCanvas.width / 2, 700);
-
-                      // Descargar
-                      const pngUrl = cardCanvas.toDataURL("image/png");
-                      const downloadLink = document.createElement("a");
-                      downloadLink.href = pngUrl;
-                      downloadLink.download = "Yape_YanetMam.png";
-                      document.body.appendChild(downloadLink);
-                      downloadLink.click();
-                      document.body.removeChild(downloadLink);
-                      toast.success("Tarjeta QR descargada");
-                    }}
-                  >
-                    <Download className="size-3.5" />
-                    Descargar QR
-                  </Button>
-                </div>
-
-                <p className="md:hidden text-xs text-purple-700 bg-purple-100/50 px-3 py-2 rounded-lg w-full mt-4">
-                  {order.estado === "lista"
-                    ? "Muestra el comprobante al recoger tu pedido"
-                    : "Puedes ir adelantando tu pago mientras preparamos tu pedido"}
-                </p>
-              </div>
-            )}
 
             {/* Cabecera de Lista de Productos */}
             <div className="flex items-center justify-between px-1">
@@ -917,6 +1004,8 @@ export default function OrderDetailPage() {
                     {estadoConfig.description}
                   </p>
 
+
+
                   {order.estado === "lista" && (
                     <a
                       href="https://maps.app.goo.gl/xEYuLvHZRJKHv6MY7"
@@ -933,6 +1022,9 @@ export default function OrderDetailPage() {
               </div>
 
 
+
+              {/* YAPE CARD MOBILE: Entre Estado y Resumen */}
+              <YapePaymentCard className="lg:hidden" />
 
               {/* TARJETA DE RESUMEN FINANCIERO */}
               <div className="bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden">
@@ -951,7 +1043,7 @@ export default function OrderDetailPage() {
                       const totalRedondeado = redondearTotal(subtotal);
                       const ajusteRedondeo = totalRedondeado - subtotal;
                       const mostrarDesglose = subtotal > 0;
-                      
+
                       return (
                         <>
                           {/* Siempre mostrar subtotal si hay un total válido, excepto en esperando_confirmacion */}
@@ -961,7 +1053,7 @@ export default function OrderDetailPage() {
                               <span className="font-medium text-gray-900">S/ {subtotal.toFixed(2)}</span>
                             </div>
                           )}
-                          
+
                           {/* Mostrar redondeo si existe ajuste */}
                           {ajusteRedondeo !== 0 && subtotal > 0 && (
                             <div className="flex justify-between items-center">
@@ -1082,6 +1174,8 @@ export default function OrderDetailPage() {
                 )}
               </div>
 
+
+
               {/* Info de Entrega Pequeña */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
                 <div className="bg-blue-50 p-2.5 rounded-full shrink-0">
@@ -1130,7 +1224,7 @@ export default function OrderDetailPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowCancelModal(true)}
-                className="px-3 sm:px-4 h-9 rounded-xl border-red-100 text-white bg-red-500 hover:bg-red-100 hover:border-red-200 shrink-0 text-sm font-medium"
+                className="px-3 sm:px-4 h-9 rounded-xl border-red-100 text-white bg-red-500 hover:bg-red-400 hover:border-red-200  shrink-0 text-sm font-medium"
               >
                 <XCircle className="size-4 sm:size-5" />
                 <span className="ml-1">Cancelar</span>
@@ -1139,7 +1233,7 @@ export default function OrderDetailPage() {
 
             {(order.estado === "esperando_confirmacion" || isPaymentRejected) ? (
               <Button
-                className="flex-1 px-6 bg-orange-500 hover:bg-orange-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-orange-200"
+                className="flex-1 px-6 h-9 bg-orange-500 hover:bg-orange-600 text-white  rounded-xl text-sm font-bold shadow-lg shadow-orange-200"
                 onClick={handleAcceptRevision}
                 disabled={loading}
               >
@@ -1172,32 +1266,34 @@ export default function OrderDetailPage() {
       />
 
       {/* Modal Confirmación Eliminar Item */}
-      {itemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-all animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 scale-100 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="bg-red-50 p-3 rounded-full">
-                <Trash2 className="size-6 text-red-500" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg text-gray-900">¿Eliminar producto?</h3>
-                <p className="text-sm text-gray-500">
-                  ¿Estás seguro de quitar <span className="font-semibold text-gray-700">{itemToDelete.nombre}</span> de este pedido?
-                </p>
-              </div>
+      {
+        itemToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-all animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 scale-100 animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="bg-red-50 p-3 rounded-full">
+                  <Trash2 className="size-6 text-red-500" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-lg text-gray-900">¿Eliminar producto?</h3>
+                  <p className="text-sm text-gray-500">
+                    ¿Estás seguro de quitar <span className="font-semibold text-gray-700">{itemToDelete.nombre}</span> de este pedido?
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3 w-full mt-2">
-                <Button variant="outline" onClick={() => setItemToDelete(null)} className="w-full h-11 rounded-xl border-gray-200 cursor-pointer">
-                  Cancelar
-                </Button>
-                <Button variant="destructive" onClick={handleConfirmDeleteItem} className="w-full bg-red-500 hover:bg-red-600 h-11 rounded-xl cursor-pointer">
-                  Eliminar
-                </Button>
+                <div className="grid grid-cols-2 gap-3 w-full mt-2">
+                  <Button variant="outline" onClick={() => setItemToDelete(null)} className="w-full h-11 rounded-xl border-gray-200 cursor-pointer">
+                    Cancelar
+                  </Button>
+                  <Button variant="destructive" onClick={handleConfirmDeleteItem} className="w-full bg-red-500 hover:bg-red-600 h-11 rounded-xl cursor-pointer">
+                    Eliminar
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
 
     </div >

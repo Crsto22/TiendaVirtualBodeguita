@@ -69,39 +69,52 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; icon: any }>
 export default function PedidosPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { orders, loading, fetchOrdersByDate } = useOrder();
+  const { orders: allOrders, loading, fetchOrdersByDate } = useOrder();
   const [filtro, setFiltro] = useState<'hoy' | 'ayer' | 'especifico'>('hoy');
   const [fechaEspecifica, setFechaEspecifica] = useState<string>('');
+  const [displayOrders, setDisplayOrders] = useState(allOrders);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Nuevo estado de carga local
 
-  // Función para cargar pedidos según el filtro
-  const cargarPedidos = useCallback(() => {
-    let fecha: Date;
-
-    switch (filtro) {
-      case 'hoy':
-        fecha = new Date();
-        break;
-      case 'ayer':
-        fecha = new Date();
-        fecha.setDate(fecha.getDate() - 1);
-        break;
-      case 'especifico':
-        if (!fechaEspecifica) return;
-        fecha = new Date(fechaEspecifica + 'T00:00:00');
-        break;
-      default:
-        fecha = new Date();
-    }
-
-    fetchOrdersByDate(fecha);
-  }, [filtro, fechaEspecifica, fetchOrdersByDate]);
-
-  // Cargar pedidos de hoy cuando el usuario está autenticado
+  // Filtrar pedidos: 'hoy' usa el contexto (realtime), otros usan fetch bajo demanda
   useEffect(() => {
-    if (user) {
-      cargarPedidos();
+    // Si el filtro es HOY, usamos los datos realtime del contexto
+    // (Asumimos que el contexto ya filtra por hoy por defecto para optimizar)
+    if (filtro === 'hoy') {
+      if (allOrders) {
+        setDisplayOrders(allOrders);
+      }
+      return;
     }
-  }, [user, cargarPedidos]);
+
+    // Para otros filtros, necesitamos hacer fetch manual
+    const cargarHistorico = async () => {
+      setIsLoadingHistory(true);
+
+      let fechaBusqueda = new Date();
+      if (filtro === 'ayer') {
+        fechaBusqueda.setDate(fechaBusqueda.getDate() - 1);
+      } else if (filtro === 'especifico' && fechaEspecifica) {
+        // Ajuste zona horaria
+        const [year, month, day] = fechaEspecifica.split('-').map(Number);
+        fechaBusqueda = new Date(year, month - 1, day, 12, 0, 0); // Medio día para evitar bordes
+      } else {
+        // Si es específico pero no hay fecha, no hacemos nada 
+        setIsLoadingHistory(false);
+        return;
+      }
+
+      // Usar la nueva función del contexto que devuelve datos
+      try {
+        const resultados = await fetchOrdersByDate(fechaBusqueda);
+        setDisplayOrders(resultados);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    cargarHistorico();
+
+  }, [filtro, fechaEspecifica, allOrders, fetchOrdersByDate]);
 
   // Cambiar filtro y recargar
   const cambiarFiltro = (nuevoFiltro: 'hoy' | 'ayer' | 'especifico') => {
@@ -128,31 +141,28 @@ export default function PedidosPage() {
               <div className="flex flex-wrap gap-2 mb-3">
                 <button
                   onClick={() => cambiarFiltro('hoy')}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                    filtro === 'hoy'
-                      ? 'bg-primary text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${filtro === 'hoy'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
                   Hoy
                 </button>
                 <button
                   onClick={() => cambiarFiltro('ayer')}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                    filtro === 'ayer'
-                      ? 'bg-primary text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${filtro === 'ayer'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
                   Ayer
                 </button>
                 <button
                   onClick={() => cambiarFiltro('especifico')}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                    filtro === 'especifico'
-                      ? 'bg-primary text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${filtro === 'especifico'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
                   Fecha específica
                 </button>
@@ -173,12 +183,12 @@ export default function PedidosPage() {
               )}
             </div>
 
-            {loading ? (
+            {loading || isLoadingHistory ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100">
                 <Loader2 className="size-12 animate-spin text-primary mb-4" />
                 <p className="text-gray-500 font-medium animate-pulse">Sincronizando tus pedidos...</p>
               </div>
-            ) : orders.length === 0 ? (
+            ) : displayOrders.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 md:p-16 text-center shadow-xl shadow-gray-200/50 border border-gray-100">
                 <div className="relative w-40 h-40 mx-auto mb-6">
                   <div className="absolute inset-0 bg-blue-50 rounded-full animate-pulse"></div>
@@ -195,7 +205,7 @@ export default function PedidosPage() {
                   {filtro === 'especifico' && 'No hay pedidos en esta fecha'}
                 </h3>
                 <p className="text-gray-500 max-w-md mx-auto mb-8 leading-relaxed">
-                  {filtro === 'hoy' 
+                  {filtro === 'hoy'
                     ? 'No has realizado ningún pedido hoy. ¡Explora nuestro catálogo!'
                     : 'No se encontraron pedidos para el período seleccionado. Prueba con otra fecha o realiza un nuevo pedido.'
                   }
@@ -211,7 +221,7 @@ export default function PedidosPage() {
               </div>
             ) : (
               <div className="space-y-4 md:space-y-5">
-                {orders.map((order) => {
+                {displayOrders.map((order) => {
                   const estadoConfig = ESTADO_CONFIG[order.estado] || ESTADO_CONFIG.pendiente;
                   const IconoEstado = estadoConfig.icon;
                   const fechaCreacion = order.fecha_creacion instanceof Date
@@ -233,7 +243,7 @@ export default function PedidosPage() {
 
                         {/* Precio Desktop */}
                         <div className="hidden md:flex items-center gap-2 text-gray-900">
-                          <span className="text-xl font-extrabold tracking-tight">S/ {order.total_estimado.toFixed(2)}</span>
+                          <span className="text-xl font-extrabold tracking-tight">S/ {(order.total_estimado > 0 ? order.total_estimado : (order.total_final ?? 0)).toFixed(2)}</span>
                           <ChevronRight className="size-5 text-gray-300 group-hover:text-primary transition-colors" />
                         </div>
                       </div>
@@ -286,7 +296,7 @@ export default function PedidosPage() {
 
                         {/* Precio en Móvil (Visible solo en móvil) */}
                         <div className="md:hidden flex items-center gap-1">
-                          <span className="text-lg font-extrabold text-gray-900">S/ {order.total_estimado.toFixed(2)}</span>
+                          <span className="text-lg font-extrabold text-gray-900">S/ {(order.total_estimado > 0 ? order.total_estimado : (order.total_final ?? 0)).toFixed(2)}</span>
                           <ChevronRight className="size-5 text-gray-400 ml-1" />
                         </div>
                       </div>

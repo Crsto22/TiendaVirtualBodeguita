@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save, User, Phone, MapPin, MapPinned, LogOut } from "lucide-react";
+import { Loader2, Save, User, Phone, MapPin, MapPinned, LogOut, Bell, BellOff } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import { LogoutModal } from "@/components/auth/logout-modal";
@@ -22,12 +23,23 @@ export default function PerfilPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isLogoutOpen, setIsLogoutOpen] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
     const [formData, setFormData] = useState({
         nombre: "",
         telefono: "",
         direccion: "",
         referencia: ""
     });
+
+    // Verificar permisos de notificación del navegador
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            setNotificationPermission(Notification.permission);
+        } else {
+            setNotificationPermission('unsupported');
+        }
+    }, []);
 
     // Verificar autenticación
     useEffect(() => {
@@ -55,6 +67,7 @@ export default function PerfilPage() {
                         direccion: data.direccion || "",
                         referencia: data.referencia || ""
                     });
+                    setNotificationsEnabled(data.notificaciones_activas ?? false);
                 }
             } catch (error) {
                 console.error("Error fetching user data:", error);
@@ -113,6 +126,59 @@ export default function PerfilPage() {
     const handleLogout = async () => {
         await logout();
         setIsLogoutOpen(false);
+    };
+
+    const handleToggleNotifications = async (enabled: boolean) => {
+        if (!user?.uid) return;
+
+        // Si intenta activar y el navegador no soporta notificaciones
+        if (enabled && notificationPermission === 'unsupported') {
+            toast.error("Tu navegador no soporta notificaciones");
+            return;
+        }
+
+        // Si intenta activar y el permiso fue denegado
+        if (enabled && notificationPermission === 'denied') {
+            toast.error("Las notificaciones están bloqueadas. Habilítalas en la configuración de tu navegador.");
+            return;
+        }
+
+        // Si intenta activar y aún no tiene permiso, solicitarlo
+        if (enabled && notificationPermission === 'default') {
+            try {
+                const permission = await Notification.requestPermission();
+                setNotificationPermission(permission);
+
+                if (permission !== 'granted') {
+                    toast.error("Debes permitir las notificaciones para activarlas");
+                    return;
+                }
+            } catch (error) {
+                console.error("Error requesting notification permission:", error);
+                toast.error("Error al solicitar permisos de notificación");
+                return;
+            }
+        }
+
+        // Guardar preferencia en Firestore
+        try {
+            const userRef = doc(db, "usuarios", user.uid);
+            await updateDoc(userRef, {
+                notificaciones_activas: enabled
+            });
+            setNotificationsEnabled(enabled);
+
+            if (enabled) {
+                toast.success("Notificaciones activadas", {
+                    description: "Recibirás alertas sobre el estado de tus pedidos"
+                });
+            } else {
+                toast.info("Notificaciones desactivadas");
+            }
+        } catch (error) {
+            console.error("Error updating notification preference:", error);
+            toast.error("Error al actualizar preferencias");
+        }
     };
 
     // Mostrar loading mientras se verifica la autenticación
@@ -240,6 +306,43 @@ export default function PerfilPage() {
                                     <Input ... />
                                 </div>
                                 */}
+
+                                {/* Notificaciones Toggle */}
+                                <div className="pt-4 border-t border-gray-100">
+                                    <div className="flex items-center justify-between p-4 bg-gray-50/80 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2.5 rounded-xl transition-colors ${notificationsEnabled ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-500'}`}>
+                                                {notificationsEnabled ? (
+                                                    <Bell className="h-5 w-5" />
+                                                ) : (
+                                                    <BellOff className="h-5 w-5" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-darkblue text-sm md:text-base">
+                                                    Notificaciones de pedidos
+                                                </p>
+                                                <p className="text-xs md:text-sm text-gray-500">
+                                                    {notificationsEnabled
+                                                        ? "Recibirás alertas del estado de tus pedidos"
+                                                        : "Activa para recibir alertas de tu pedido"
+                                                    }
+                                                </p>
+                                                {notificationPermission === 'denied' && (
+                                                    <p className="text-xs text-red-500 mt-1">
+                                                        Notificaciones bloqueadas en el navegador
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={notificationsEnabled}
+                                            onCheckedChange={handleToggleNotifications}
+                                            disabled={notificationPermission === 'unsupported'}
+                                            className="data-[state=checked]:bg-primary"
+                                        />
+                                    </div>
+                                </div>
 
                                 {/* Buttons */}
                                 <div className="pt-6 space-y-4">
