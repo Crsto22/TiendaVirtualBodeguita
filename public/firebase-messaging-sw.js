@@ -22,9 +22,10 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Notificación recibida en background:', payload);
 
-    const notificationTitle = payload.notification?.title || 'Tienda Bodeguita';
+    // Intentar obtener título y cuerpo de notification (si existe) o de data (payload data-only)
+    const notificationTitle = payload.notification?.title || payload.data?.title || 'Tienda Bodeguita';
     const notificationOptions = {
-        body: payload.notification?.body || 'Tienes una nueva notificación',
+        body: payload.notification?.body || payload.data?.body || 'Tienes una nueva notificación',
         icon: '/LogoPWA.png',
         badge: '/LogoPWA.png',
         tag: payload.data?.orderId || 'general',
