@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { NotificationToggle } from "@/components/notification-toggle";
 import { Navbar } from "@/components/navbar";
 import { MobileDock } from "@/components/mobile-dock";
 import { useAuth } from "@/context/AuthContext";
@@ -130,10 +131,13 @@ export default function PedidosPage() {
       <div className="container mx-auto px-4 pt-6 md:pt-8">
         {user ? (
           <div className=" mx-auto">
-            {/* Título */}
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-5 px-2">
-              Historial de Pedidos
-            </h1>
+            {/* Título y Toggle Notificaciones */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-5 gap-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 px-2">
+                Historial de Pedidos
+              </h1>
+              <NotificationToggle variant="simple" className="bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100" />
+            </div>
 
             {/* Filtros de Fecha */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">

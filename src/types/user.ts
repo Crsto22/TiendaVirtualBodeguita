@@ -7,4 +7,7 @@ export interface AppUser {
     telefono?: string;
     direccion?: string;
     referencia?: string;
+    // Firebase Cloud Messaging (Push Notifications)
+    fcmToken?: string;
+    fcmTokenUpdatedAt?: string;
 }

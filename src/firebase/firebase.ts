@@ -3,6 +3,7 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
+import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -29,4 +30,14 @@ if (typeof window !== "undefined") {
     });
 }
 
-export { app, auth, db, realtimeDb, analytics };
+// Firebase Cloud Messaging (solo en cliente)
+let messaging: Messaging | null = null;
+if (typeof window !== "undefined") {
+    try {
+        messaging = getMessaging(app);
+    } catch (error) {
+        console.error("Error initializing Firebase Messaging:", error);
+    }
+}
+
+export { app, auth, db, realtimeDb, analytics, messaging, firebaseConfig, getToken, onMessage };

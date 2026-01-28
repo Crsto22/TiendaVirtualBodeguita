@@ -45,6 +45,7 @@ import { toast } from "sonner";
 
 import { ESTADO_CONFIG, capitalizeText } from "@/constants/order-config";
 import { SubstituteCarousel } from "@/components/order/substitute-carousel";
+import { NotificationToggle } from "@/components/notification-toggle";
 import { OrderItem } from "@/components/order/order-item";
 import { OrderItem as IOrderItem } from "@/types/order";
 
@@ -791,6 +792,24 @@ export default function OrderDetailPage() {
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Layout Grid: Movil 1 col, Desktop 2 cols (con sidebar sticky) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+
+          {/* Alerta de Notificaciones Desactivadas */}
+          {user && (!user.fcmToken || Notification.permission !== 'granted') && (
+            <div className="lg:col-span-12 order-1 lg:order-0">
+              <div className=" border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-orange-500 text-white rounded-lg shrink-0">
+                    <AlertCircle className="size-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-700 text-xs sm:text-base ">Activa las notificaciones</h4>
+                    <p className="text-xs text-gray-600 text-xs sm:text-base">Para recibir actualizaciones sobre el estado de tu pedido en tiempo real.</p>
+                  </div>
+                </div>
+                <NotificationToggle variant="simple" showLabel={true} className="shrink-0 " />
+              </div>
+            </div>
+          )}
 
           {/* COLUMNA IZQUIERDA (Productos) - Ocupa 8/12 en desktop */}
           <div className="lg:col-span-8 space-y-6 order-2 lg:order-1">
