@@ -138,10 +138,6 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
         const ordersRef = collection(db, "pedidos");
         const docRef = await addDoc(ordersRef, newOrder);
 
-        toast.success("¡Pedido creado exitosamente!", {
-          description: `Número de orden: ${newOrder.numeroOrden}`,
-        });
-
         return docRef.id;
       } catch (error) {
         console.error("Error al crear el pedido:", error);

@@ -104,20 +104,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setNotificationPermission(permission);
 
             if (permission === 'granted') {
-                const token = await getToken(messaging, {
-                    vapidKey: VAPID_KEY,
-                });
+                // Obtener el registro del Service Worker explícitamente
+                const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
 
-                if (token) {
-                    console.log('🔔 FCM Token obtenido:', token.substring(0, 20) + '...');
-                    setFcmToken(token);
+                if (registration) {
+                    const token = await getToken(messaging, {
+                        vapidKey: VAPID_KEY,
+                        serviceWorkerRegistration: registration
+                    });
 
-                    // Guardar en Firestore si hay usuario logueado
-                    if (user?.uid) {
-                        await saveFcmToken(user.uid, token);
+                    if (token) {
+                        console.log('🔔 FCM Token obtenido:', token.substring(0, 20) + '...');
+                        setFcmToken(token);
+
+                        // Guardar en Firestore si hay usuario logueado
+                        if (user?.uid) {
+                            await saveFcmToken(user.uid, token);
+                        }
+
+                        return token;
                     }
-
-                    return token;
+                } else {
+                    console.error('❌ Service Worker no encontrado. No se puede obtener token.');
                 }
             } else {
                 console.log('⚠️ Permiso de notificación denegado');
@@ -168,10 +176,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (typeof window !== 'undefined' && 'Notification' in window && messaging) {
                 if (Notification.permission === 'granted') {
                     try {
-                        const token = await getToken(messaging, { vapidKey: VAPID_KEY });
-                        if (token) {
-                            setFcmToken(token);
-                            await saveFcmToken(firebaseUser.uid, token);
+                        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+                        if (registration) {
+                            const token = await getToken(messaging, {
+                                vapidKey: VAPID_KEY,
+                                serviceWorkerRegistration: registration
+                            });
+                            if (token) {
+                                setFcmToken(token);
+                                await saveFcmToken(firebaseUser.uid, token);
+                            }
                         }
                     } catch (e) {
                         console.error('Error obteniendo FCM token en login:', e);
