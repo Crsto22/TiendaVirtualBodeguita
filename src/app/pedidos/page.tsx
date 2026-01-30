@@ -19,51 +19,44 @@ import {
   ShoppingBag,
   CalendarDays,
   Receipt,
-  Filter
+  Filter,
+  Dot
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // Configuración de estados (Misma lógica, solo ajuste visual en iconos)
-const ESTADO_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+const ESTADO_CONFIG: Record<string, { label: string; color: string }> = {
   pendiente: {
     label: "Pendiente",
     color: "bg-yellow-50 text-yellow-700 border-yellow-200 ring-yellow-500/20",
-    icon: Clock,
   },
   en_revision: {
     label: "En Revisión",
     color: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/20",
-    icon: Package,
   },
   esperando_confirmacion: {
     label: "Esperando Confirmación",
     color: "bg-orange-50 text-orange-700 border-orange-200 ring-orange-500/20",
-    icon: AlertCircle,
   },
   confirmada: {
     label: "Confirmada",
     color: "bg-green-50 text-green-700 border-green-200 ring-green-500/20",
-    icon: CheckCircle2,
   },
   preparando: {
     label: "Preparando",
     color: "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/20",
-    icon: Package,
   },
   lista: {
     label: "Lista para Recojo",
     color: "bg-teal-50 text-teal-700 border-teal-200 ring-teal-500/20",
-    icon: CheckCircle2,
   },
   entregada: {
     label: "Entregada",
     color: "bg-gray-50 text-gray-700 border-gray-200 ring-gray-500/20",
-    icon: CheckCircle2,
   },
   cancelada: {
     label: "Cancelada",
     color: "bg-red-50 text-red-700 border-red-200 ring-red-500/20",
-    icon: XCircle,
   },
 };
 
@@ -75,6 +68,22 @@ export default function PedidosPage() {
   const [fechaEspecifica, setFechaEspecifica] = useState<string>('');
   const [displayOrders, setDisplayOrders] = useState(allOrders);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Nuevo estado de carga local
+
+  // Filtrar pedidos visualmente: excluir pedidos esperando confirmación que ya expiraron
+  const visibleOrders = displayOrders ? displayOrders.filter(order => {
+    if (order.estado === 'esperando_confirmacion' && order.expira_en) {
+      const now = Date.now();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const expiraEn: any = order.expira_en;
+      try {
+        const expirationTime = expiraEn.toDate ? expiraEn.toDate().getTime() : new Date(expiraEn).getTime();
+        return expirationTime > now;
+      } catch (e) {
+        return true; // En caso de error de fecha, mostrar por seguridad
+      }
+    }
+    return true;
+  }) : [];
 
   // Filtrar pedidos: 'hoy' usa el contexto (realtime), otros usan fetch bajo demanda
   useEffect(() => {
@@ -192,7 +201,7 @@ export default function PedidosPage() {
                 <Loader2 className="size-12 animate-spin text-primary mb-4" />
                 <p className="text-gray-500 font-medium animate-pulse">Sincronizando tus pedidos...</p>
               </div>
-            ) : displayOrders.length === 0 ? (
+            ) : visibleOrders.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 md:p-16 text-center shadow-xl shadow-gray-200/50 border border-gray-100">
                 <div className="relative w-40 h-40 mx-auto mb-6">
                   <div className="absolute inset-0 bg-blue-50 rounded-full animate-pulse"></div>
@@ -225,9 +234,8 @@ export default function PedidosPage() {
               </div>
             ) : (
               <div className="space-y-4 md:space-y-5">
-                {displayOrders.map((order) => {
+                {visibleOrders.map((order) => {
                   const estadoConfig = ESTADO_CONFIG[order.estado] || ESTADO_CONFIG.pendiente;
-                  const IconoEstado = estadoConfig.icon;
                   const fechaCreacion = order.fecha_creacion instanceof Date
                     ? order.fecha_creacion
                     : order.fecha_creacion?.toDate?.() || new Date();
@@ -241,7 +249,7 @@ export default function PedidosPage() {
                       {/* Fila Superior: Estado y Precio (Desktop) */}
                       <div className="flex justify-between items-start mb-4">
                         <Badge className={`${estadoConfig.color} border ring-0 px-3 py-1 text-xs font-bold rounded-full shadow-sm`}>
-                          <IconoEstado className="size-3.5 mr-1.5" />
+                          <Dot size={16} strokeWidth={10} />
                           {estadoConfig.label}
                         </Badge>
 

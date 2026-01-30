@@ -151,8 +151,11 @@ export async function getProductsByCategory(
   page: number = 1
 ): Promise<CategoryProductsResponse> {
   try {
+    // Reemplazar espacios con guiones como solicitó el usuario
+    const formattedCategory = categoryName.replace(/\s+/g, '-');
+
     const response = await fetch(
-      `${API_BASE_URL}/categoria/${encodeURIComponent(categoryName)}?page=${page}`,
+      `${API_BASE_URL}/categoria/${encodeURIComponent(formattedCategory)}?page=${page}`,
       {
         cache: 'no-store',
       }

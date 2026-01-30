@@ -79,7 +79,7 @@ function obtenerCantidadSubstituto(subItem: any, cantidadSeleccionada: number): 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { fetchOrderById, updateOrderStatus } = useOrder();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -98,6 +98,7 @@ export default function OrderDetailPage() {
   const [revisionPagaCon, setRevisionPagaCon] = useState<string>("");
   const [pagoCompletoRevision, setPagoCompletoRevision] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
   const warningShownRef = useRef(false);
 
   const handleUpdateItem = async (itemId: string, updates: Partial<IOrderItem>) => {
@@ -255,6 +256,12 @@ export default function OrderDetailPage() {
       const expirationTime = expiraEn.toDate ? expiraEn.toDate().getTime() : new Date(expiraEn).getTime();
       const remaining = Math.max(0, expirationTime - now);
 
+      if (remaining === 0 && order.estado === "esperando_confirmacion") {
+        setIsExpired(true);
+      } else {
+        setIsExpired(false);
+      }
+
       if (remaining <= 15000 && remaining > 0 && !warningShownRef.current) {
         toast.warning("El pedido expirará pronto", {
           description: "En 15 segundos se cancelará automáticamente el pedido.",
@@ -272,6 +279,8 @@ export default function OrderDetailPage() {
   }, [order]);
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!user) {
       router.push("/");
       return;
@@ -324,7 +333,7 @@ export default function OrderDetailPage() {
     return () => {
       unsubscribe();
     };
-  }, [orderId, user, router]);
+  }, [orderId, user, router, authLoading]);
 
   const handleCancelOrder = async () => {
     if (!orderId) return;
@@ -534,7 +543,7 @@ export default function OrderDetailPage() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -570,10 +579,38 @@ export default function OrderDetailPage() {
           <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">{errorMessage}</p>
           <Button
             onClick={() => router.push("/inicio")}
-            className="w-full max-w-xs mx-auto rounded-full h-12 text-base font-semibold"
+            className="w-full max-w-xs mx-auto rounded-full text-white h-12 text-base font-semibold bg-primary hover:bg-primary/90"
           >
             <ArrowLeft className="size-4 mr-2" />
             Volver al Inicio
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isExpired) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 px-6">
+        <div className="w-full max-w-sm sm:max-w-md text-center">
+          <div className="relative w-48 h-48 sm:w-56 sm:h-56 mx-auto mb-6">
+            <Image
+              src="/Pedidos/PedidoCancelado.png"
+              alt="Tiempo Agotado"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">¡Se agotó el tiempo!</h2>
+          <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">
+            El tiempo de espera para confirmar tu pedido ha finalizado.
+          </p>
+          <Button
+            onClick={() => router.push("/inicio")}
+            className="w-full max-w-xs mx-auto rounded-full text-white h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+          >
+            Hacer otro pedido
           </Button>
         </div>
       </div>
