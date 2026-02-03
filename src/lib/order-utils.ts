@@ -145,3 +145,54 @@ export function countReturnableBottles(cartItems: CartItem[]): number {
 export function hasVisiblePrices(cartItems: CartItem[]): boolean {
   return cartItems.some((item) => item.mostrar_precio_web !== false && item.precio !== null);
 }
+
+// ============================================================================
+// FUNCIONES PARA MANEJO DE PEDIDOS Y SUSTITUTOS
+// ============================================================================
+
+/**
+ * Redondea el total a múltiplos de 0.10 céntimos
+ * @param total Total a redondear
+ * @returns Total redondeado
+ */
+export function redondearTotal(total: number): number {
+  return Math.round(total * 10) / 10;
+}
+
+/**
+ * Verifica si un sustituto es una propuesta fija (tiene cantidad_propuesta o peso_propuesto)
+ * @param subItem Item sustituto a verificar
+ * @returns true si es propuesta fija
+ */
+export function esPropouestaFija(subItem: any): boolean {
+  return (
+    (subItem.peso_propuesto_gramos !== null && subItem.peso_propuesto_gramos !== undefined) ||
+    (subItem.cantidad_propuesta !== null && subItem.cantidad_propuesta !== undefined)
+  );
+}
+
+/**
+ * Calcula el precio de un sustituto según su tipo (propuesta fija o variable)
+ * @param subItem Item sustituto
+ * @param cantidad Cantidad seleccionada por el usuario
+ * @returns Precio calculado del sustituto
+ */
+export function calcularPrecioSubstituto(subItem: any, cantidad: number): number {
+  if (esPropouestaFija(subItem)) {
+    return Number(subItem.precio_final) || 0;
+  }
+  return (Number(subItem.precio_base) || 0) * cantidad;
+}
+
+/**
+ * Obtiene la cantidad final del sustituto (propuesta fija o cantidad seleccionada)
+ * @param subItem Item sustituto
+ * @param cantidadSeleccionada Cantidad seleccionada por el usuario
+ * @returns Cantidad final del sustituto
+ */
+export function obtenerCantidadSubstituto(subItem: any, cantidadSeleccionada: number): number {
+  if (esPropouestaFija(subItem)) {
+    return subItem.cantidad_propuesta || 1;
+  }
+  return cantidadSeleccionada;
+}

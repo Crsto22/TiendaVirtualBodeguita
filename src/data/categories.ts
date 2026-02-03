@@ -120,7 +120,7 @@ export const categories: Category[] = [
     description: "Gaseosas variadas"
   },
   { 
-    name: "Bebidas y Alimentos Instantaneas", 
+    name: "Bebidas y Alimentos Instantáneos", 
     image: "/Categorias/BebidasAlimentosInstantaneas.png", 
     color: "bg-gradient-to-br from-yellow-500 to-yellow-700", 
     href: "/categorias",

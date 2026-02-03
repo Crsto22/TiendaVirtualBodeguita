@@ -1,549 +1,98 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, onSnapshot, deleteDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/firebase/firebase";
-import { useAuth } from "@/context/AuthContext";
-import { useOrder } from "@/context/OrderContext";
-import { Order } from "@/types/order";
-import {
-  MapPin,
-  Wallet,
-  ThermometerSun,
-  ChevronLeft,
-  ChevronRight,
-  Minus,
-  Plus,
-  ShoppingCart,
-  Trash2,
-  Clock,
-  Package,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  ArrowLeft,
-  Store,
-  ShoppingBag,
-  Snowflake,
-  AlertCircle,
-  Recycle,
-  Banknote,
-  Smartphone,
-  Download,
-} from "lucide-react";
-import { QRCodeCanvas } from "qrcode.react";
 import Image from "next/image";
-import Link from "next/link";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+// Hooks
+import { useOrderData } from "@/hooks/useOrderData";
+import { useOrderTimer } from "@/hooks/useOrderTimer";
+import { useOrderRevision } from "@/hooks/useOrderRevision";
+import { useOrderActions } from "@/hooks/useOrderActions";
+import { useOrderDeletion } from "@/hooks/useOrderDeletion";
+
+
+// Components
+import { OrderHeader } from "@/components/order/OrderHeader";
+import { OrderStatusCard } from "@/components/order/OrderStatusCard";
+import { OrderItemsList } from "@/components/order/OrderItemsList";
+import { OrderRevisionSection } from "@/components/order/OrderRevisionSection";
+import { PaymentSummaryCard } from "@/components/order/PaymentSummaryCard";
+import { DeliveryInfoCard } from "@/components/order/DeliveryInfoCard";
+import { YapePaymentCard } from "@/components/order/YapePaymentCard";
+import { OrderBottomBar } from "@/components/order/OrderBottomBar";
+import { OrderNotificationBanner } from "@/components/order/OrderNotificationBanner";
+
 import { CancelOrderModal } from "@/components/order/cancel-order-modal";
 import { PaymentRejectedModal } from "@/components/order/payment-rejected-modal";
-import { toast } from "sonner";
-
-import { ESTADO_CONFIG, capitalizeText } from "@/constants/order-config";
-import { SubstituteCarousel } from "@/components/order/substitute-carousel";
-import { NotificationToggle } from "@/components/notification-toggle";
-import { OrderItem } from "@/components/order/order-item";
-import { OrderItem as IOrderItem } from "@/types/order";
-
-// Función para redondear el total a múltiplos de 0.10
-function redondearTotal(total: number): number {
-  return Math.round(total * 10) / 10;
-}
-
-// Helper: Verificar si un sustituto es una propuesta fija (tiene cantidad_propuesta o peso_propuesto)
-function esPropouestaFija(subItem: any): boolean {
-  return (subItem.peso_propuesto_gramos !== null && subItem.peso_propuesto_gramos !== undefined) ||
-    (subItem.cantidad_propuesta !== null && subItem.cantidad_propuesta !== undefined);
-}
-
-// Helper: Calcular precio de un sustituto según su tipo
-function calcularPrecioSubstituto(subItem: any, cantidad: number): number {
-  if (esPropouestaFija(subItem)) {
-    return Number(subItem.precio_final) || 0;
-  }
-  return (Number(subItem.precio_base) || 0) * cantidad;
-}
-
-// Helper: Obtener la cantidad final del sustituto
-function obtenerCantidadSubstituto(subItem: any, cantidadSeleccionada: number): number {
-  if (esPropouestaFija(subItem)) {
-    return subItem.cantidad_propuesta || 1;
-  }
-  return cantidadSeleccionada;
-}
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const { fetchOrderById, updateOrderStatus } = useOrder();
-
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
-  // State para manejar múltiples sustitutos: parentId -> { subId: quantity }
-  const [substituteSelections, setSubstituteSelections] = useState<Record<string, Record<string, number>>>({});
-  // State para manejar si el usuario decide cancelar todo el item original
-  const [canceledItems, setCanceledItems] = useState<Record<string, boolean>>({});
-  const [itemToDelete, setItemToDelete] = useState<any>(null);
-
-  // State para revisión de pago
-  const [revisionPaymentMethod, setRevisionPaymentMethod] = useState<"efectivo" | "yape" | null>(null);
-  const [revisionPagaCon, setRevisionPagaCon] = useState<string>("");
-  const [pagoCompletoRevision, setPagoCompletoRevision] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [isExpired, setIsExpired] = useState(false);
-  const warningShownRef = useRef(false);
-
-  const handleUpdateItem = async (itemId: string, updates: Partial<IOrderItem>) => {
-    if (!order) return;
-
-    try {
-      const updatedItems = order.items.map(i => {
-        if (i.itemId === itemId) {
-          return { ...i, ...updates };
-        }
-        return i;
-      });
-
-      const newTotal = updatedItems.reduce((acc, i) => acc + (i.precio_final || 0), 0);
-
-      await updateDoc(doc(db, "pedidos", orderId), {
-        items: updatedItems,
-        total_estimado: newTotal
-      });
-      // No toast on every update to avoid spam, or simplistic toast
-    } catch (err) {
-      console.error(err);
-      toast.error("Error al actualizar producto");
-    }
-  };
-
-  const handleDeleteItem = (item: IOrderItem) => {
-    if (!order) return;
-    // Si es el último producto, advertir cancelación de pedido
-    const activeItemsCount = order.items.filter(i => !i.es_sustituto).length;
-    if (activeItemsCount <= 1) {
-      setShowCancelModal(true);
-    } else {
-      setItemToDelete(item);
-    }
-  };
-
-  const handleConfirmDeleteItem = async () => {
-    if (!order || !itemToDelete) return;
-
-    try {
-      const updatedItems = order.items.filter(i => i.itemId !== itemToDelete.itemId);
-      const newTotal = updatedItems.reduce((acc, i) => acc + (i.precio_final || 0), 0);
-
-      await updateDoc(doc(db, "pedidos", orderId), {
-        items: updatedItems,
-        total_estimado: newTotal
-      });
-      toast.success("Producto eliminado del pedido");
-      setItemToDelete(null);
-    } catch (err) {
-      console.error(err);
-      toast.error("Error al eliminar producto");
-    }
-  };
-
-  const handleToggleCancelItem = (parentId: string) => {
-    setCanceledItems(prev => {
-      const isCanceling = !prev[parentId];
-      // Si cancelamos el item, limpiamos sus sustitutos seleccionados
-      if (isCanceling) {
-        setSubstituteSelections(curr => {
-          const next = { ...curr };
-          delete next[parentId];
-          return next;
-        });
-      }
-      return { ...prev, [parentId]: isCanceling };
-    });
-  };
-
-  const handleUpdateSubstituteQty = (parentId: string, substituteId: string, quantity: number) => {
-    // Asegurarnos de que el item no esté marcado como cancelado
-    if (canceledItems[parentId]) {
-      setCanceledItems(prev => ({ ...prev, [parentId]: false }));
-    }
-
-    setSubstituteSelections(prev => {
-      const parentSelections = prev[parentId] || {};
-
-      if (quantity <= 0) {
-        // Remover sustituto si cantidad es 0
-        const { [substituteId]: _, ...rest } = parentSelections;
-        // Si no quedan sustitutos, limpiar el objeto del padre
-        if (Object.keys(rest).length === 0) {
-          const { [parentId]: __, ...restParents } = prev;
-          return restParents;
-        }
-        return { ...prev, [parentId]: rest };
-      }
-
-      // Actualizar cantidad
-      return {
-        ...prev,
-        [parentId]: {
-          ...parentSelections,
-          [substituteId]: quantity
-        }
-      };
-    });
-  };
-
-  const handleClearSubstitutes = (parentId: string) => {
-    // Opción "Solo lo que hay" -> Limpia sustitutos y asegura que no esté cancelado
-    setSubstituteSelections(prev => {
-      const { [parentId]: _, ...rest } = prev;
-      return rest;
-    });
-    setCanceledItems(prev => ({ ...prev, [parentId]: false }));
-  };
-
   const orderId = params.orderId as string;
 
-  const calculateRevisionTotal = () => {
-    if (!order) return 0;
-    let currentTotal = 0;
 
-    // Helper interno para sumar sustitutos seleccionados
-    const sumarSubstitutos = (itemId: string) => {
-      const selections = substituteSelections[itemId] || {};
-      const subs = order.items.filter(s => s.es_sustituto && s.sustituye_a === itemId);
-      Object.entries(selections).forEach(([subId, qty]) => {
-        const sub = subs.find(s => s.itemId === subId);
-        if (sub && qty > 0) {
-          currentTotal += calcularPrecioSubstituto(sub, qty);
-        }
-      });
-    };
+  // 1. Data Fetching
+  const { order, loading: loadingData, error } = useOrderData(orderId);
 
-    order.items.forEach(i => {
-      if (i.es_sustituto) return;
-      if (canceledItems[i.itemId]) return;
+  // 2. Timer Logic
+  const { timeRemaining, isExpired, minutes, seconds } = useOrderTimer(order);
 
-      if (i.estado_item === "stock_parcial") {
-        currentTotal += (Number(i.precio_base) || 0) * (i.cantidad_final || 0);
-        sumarSubstitutos(i.itemId);
-      } else if (i.estado_item === "sin_stock") {
-        sumarSubstitutos(i.itemId);
-      } else {
-        const unitPrice = (i.precio_helada && i.cantidad_helada > 0) ? Number(i.precio_helada) : Number(i.precio_base);
-        currentTotal += unitPrice * Number(i.cantidad_solicitada);
-      }
-    });
-    return currentTotal;
-  };
+  // 3. Revision Logic (Substitutes & Payment Form)
+  const {
+    substituteSelections,
+    canceledItems,
+    revisionPaymentMethod,
+    revisionPagaCon,
+    pagoCompletoRevision,
+    updateSubstituteQty,
+    toggleCancelItem,
+    clearSubstitutes,
+    setRevisionPaymentMethod,
+    setRevisionPagaCon,
+    setPagoCompletoRevision,
+    calculateRevisionTotal,
+  } = useOrderRevision(order);
 
-  // Efecto para calcular el tiempo restante
-  useEffect(() => {
-    if (!order || !order.expira_en) return;
+  // 4. Actions (Update, Delete, Cancel, Confirm)
+  const {
+    cancelOrder,
+    updateItem,
+    deleteItem,
+    acceptRevision,
+    isCancelling,
+    isUpdating,
+  } = useOrderActions({
+    order,
+    substituteSelections,
+    canceledItems,
+    revisionPaymentMethod,
+    revisionPagaCon,
+    calculateRevisionTotal,
+  });
 
-    const calculateTimeRemaining = () => {
-      const now = new Date().getTime();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const expiraEn: any = order.expira_en;
-      const expirationTime = expiraEn.toDate ? expiraEn.toDate().getTime() : new Date(expiraEn).getTime();
-      const remaining = Math.max(0, expirationTime - now);
+  // 5. Deletion Logic (Confirmation Modal)
+  const {
+    itemToDelete,
+    setItemToDelete,
+    showCancelModal,
+    setShowCancelModal,
+    handleRequestDelete,
+    handleConfirmDelete,
+  } = useOrderDeletion({ order, deleteItemAction: deleteItem });
 
-      if (remaining === 0 && order.estado === "esperando_confirmacion") {
-        setIsExpired(true);
-      } else {
-        setIsExpired(false);
-      }
+  // derived state
+  const isPaymentRejected = order?.pago?.rechazo_vuelto === true;
+  const canCancelOrder =
+    order?.estado === "pendiente" ||
+    order?.estado === "esperando_confirmacion" ||
+    isPaymentRejected;
 
-      if (remaining <= 15000 && remaining > 0 && !warningShownRef.current) {
-        toast.warning("El pedido expirará pronto", {
-          description: "En 15 segundos se cancelará automáticamente el pedido.",
-        });
-        warningShownRef.current = true;
-      }
+  // -- Render States --
 
-      setTimeRemaining(remaining);
-    };
-
-    calculateTimeRemaining();
-    const interval = setInterval(calculateTimeRemaining, 1000);
-
-    return () => clearInterval(interval);
-  }, [order]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      router.push("/");
-      return;
-    }
-
-    if (!orderId) {
-      setError("ID de pedido no válido");
-      setLoading(false);
-      return;
-    }
-
-    // Listener en tiempo real con onSnapshot
-    const orderRef = doc(db, "pedidos", orderId);
-    const unsubscribe = onSnapshot(
-      orderRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const orderData = {
-            orderId: docSnap.id,
-            ...docSnap.data(),
-          } as Order;
-
-          // Verificar que el pedido pertenece al usuario
-          if (orderData.userId !== user.uid) {
-            setError("No tienes permiso para ver este pedido");
-            setLoading(false);
-            return;
-          }
-
-          setOrder(orderData);
-          // Inicializar método de pago para revisión
-          if ((orderData.estado === "esperando_confirmacion" || orderData.pago?.rechazo_vuelto) && orderData.pago) {
-            setRevisionPaymentMethod(orderData.pago.metodo);
-            setRevisionPagaCon(orderData.pago.monto_paga_con ? orderData.pago.monto_paga_con.toString() : "");
-          }
-          setError(null);
-        } else {
-          setError("Pedido no encontrado");
-        }
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Error al escuchar cambios del pedido:", err);
-        setError("Error al cargar el pedido");
-        setLoading(false);
-      }
-    );
-
-    // Cleanup: desuscribirse cuando el componente se desmonte
-    return () => {
-      unsubscribe();
-    };
-  }, [orderId, user, router, authLoading]);
-
-  const handleCancelOrder = async () => {
-    if (!orderId) return;
-
-    setIsCancelling(true);
-    try {
-      // Eliminar el pedido de Firestore
-      const orderRef = doc(db, "pedidos", orderId);
-      await deleteDoc(orderRef);
-
-      toast.success("Pedido eliminado correctamente");
-      setShowCancelModal(false);
-
-      // Redirigir a la página de inicio
-      setTimeout(() => {
-        router.push("/inicio");
-      }, 500);
-    } catch (error) {
-      console.error("Error al eliminar pedido:", error);
-      toast.error("Error al eliminar el pedido");
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-
-  const handleAcceptRevision = async () => {
-    if (!order) return;
-
-    // Validar que se haya tomado una decisión para todos los items agotados con sustitutos
-    const mainItems = order.items.filter(i => !i.es_sustituto);
-    const pendingDecisions = mainItems.filter(item => {
-      const hasSubstitutes = order.items.some(s => s.es_sustituto && s.sustituye_a === item.itemId);
-      const isProblem = item.estado_item === "sin_stock" || item.estado_item === "stock_parcial";
-
-      // Ya se tomó decisión si:
-      // 1. Está marcado para cancelar
-      // 2. Se seleccionaron sustitutos
-      // 3. Se decidió explícitamente "Solo lo que hay" (esto es lo default si no hace nada, ¿o forzamos interacción?)
-      //    Para evitar bloqueo, asumiremos que si no seleccionó nada, acepta "Solo lo que hay" a menos que sea Sin Stock total (ahí requiere acción si quiere sustituto, sino se borra)
-
-      const isCanceled = canceledItems[item.itemId];
-      const hasSelections = substituteSelections[item.itemId] && Object.keys(substituteSelections[item.itemId]).length > 0;
-
-      // Si es SIN STOCK TOTAL, requerimos que elija algo O cancele.
-      // Si no hace nada -> se asume cancelar/borrar item al final.
-
-      return false; // Permitimos confirmar siempre, aplicando la lógica por defecto
-    });
-
-    if (pendingDecisions.length > 0) {
-      toast.error("Por favor selecciona una opción para todos los productos agotados");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const newItems: any[] = [];
-      let newTotal = 0;
-
-      const substitutes = order.items.filter(i => i.es_sustituto);
-
-      mainItems.forEach(item => {
-        // Verificar si el usuario decidió eliminar este item por completo
-        if (canceledItems[item.itemId]) {
-          // No lo agregamos al nuevo array (eliminación)
-          return;
-        }
-
-        // Si es SIN STOCK y NO se eligieron sustitutos -> Se elimina por defecto
-        if (item.estado_item === "sin_stock") {
-          const selections = substituteSelections[item.itemId] || {};
-          const selectedSubIds = Object.keys(selections);
-
-          if (selectedSubIds.length > 0) {
-            // Procesar cada sustituto seleccionado
-            selectedSubIds.forEach((subID, index) => {
-              const subItem = substitutes.find(s => s.itemId === subID);
-              const finalQty = selections[subID];
-
-              if (subItem && finalQty > 0) {
-                const precioCalculado = calcularPrecioSubstituto(subItem, finalQty);
-                const cantidadFinal = obtenerCantidadSubstituto(subItem, finalQty);
-
-                const newItem = {
-                  ...subItem,
-                  itemId: index === 0 ? item.itemId : `sub-${item.itemId}-${Date.now()}-${index}`,
-                  cantidad_solicitada: cantidadFinal,
-                  cantidad_final: cantidadFinal,
-                  precio_final: precioCalculado,
-                  estado_item: 'disponible',
-                  es_sustituto: false,
-                  sustituye_a: undefined,
-                };
-                delete (newItem as any).sustituye_a;
-                newItems.push(newItem);
-                newTotal += precioCalculado;
-              }
-            });
-          }
-          // Sin stock y sin selecciones -> se elimina
-        }
-        else if (item.estado_item === "stock_parcial") {
-          // 1. Agregar el item original con la cantidad reducida
-          const reducedItem = {
-            ...item,
-            cantidad_solicitada: item.cantidad_final || 0,
-            estado_item: 'modificado',
-            precio_final: (Number(item.precio_base) || 0) * (item.cantidad_final || 0),
-          };
-          newItems.push(reducedItem);
-          newTotal += (Number(reducedItem.precio_final) || 0);
-
-          // 2. Agregar sustitutos seleccionados
-          const selections = substituteSelections[item.itemId] || {};
-          Object.entries(selections).forEach(([subID, finalQty]) => {
-            const subItem = substitutes.find(s => s.itemId === subID);
-            if (subItem && finalQty > 0) {
-              const precioCalculado = calcularPrecioSubstituto(subItem, finalQty);
-              const cantidadFinal = obtenerCantidadSubstituto(subItem, finalQty);
-
-              const newSubItem = {
-                ...subItem,
-                itemId: `sub-${item.itemId}-${Date.now()}-${subID}`,
-                cantidad_solicitada: cantidadFinal,
-                cantidad_final: cantidadFinal,
-                precio_final: precioCalculado,
-                estado_item: 'disponible',
-                es_sustituto: false,
-                sustituye_a: undefined,
-              };
-              delete (newSubItem as any).sustituye_a;
-              newItems.push(newSubItem);
-              newTotal += precioCalculado;
-            }
-          });
-        }
-        else {
-          // Item normal
-          const pFinal = item.precio_final !== undefined && item.precio_final !== null
-            ? item.precio_final
-            : (Number(item.precio_base) * Number(item.cantidad_solicitada));
-          newItems.push(item);
-          newTotal += (Number(pFinal) || 0);
-        }
-      });
-
-      // Validar selección de método de pago
-      if (!revisionPaymentMethod) {
-        toast.error("Debes seleccionar un método de pago para el nuevo total");
-        setLoading(false);
-        return;
-      }
-
-      // Validar monto si es efectivo
-      if (revisionPaymentMethod === "efectivo") {
-        const pagoCon = parseFloat(revisionPagaCon);
-        const totalRedondeado = redondearTotal(newTotal);
-        if (isNaN(pagoCon) || pagoCon < totalRedondeado) {
-          toast.error(`El monto con el que pagas debe ser mayor o igual al total (S/ ${totalRedondeado.toFixed(2)})`);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Recalcular envases retornables
-      const newEnvasesRetornables = newItems.reduce((acc, item) => {
-        if (item.es_retornable) {
-          return acc + (Number(item.cantidad_solicitada) || 0);
-        }
-        return acc;
-      }, 0);
-
-      // Aplicar redondeo al total final
-      const totalRedondeado = redondearTotal(newTotal);
-
-      // Actualizar Firestore
-      const orderRef = doc(db, "pedidos", order.orderId);
-      await updateDoc(orderRef, {
-        items: newItems,
-        total_final: totalRedondeado,
-        envases_retornables: newEnvasesRetornables,
-        estado: "confirmada",
-        expira_en: null,
-        requiere_confirmacion: false,
-        "revision.requiere_accion": false,
-        "pago.metodo": revisionPaymentMethod,
-        "pago.monto_paga_con": revisionPaymentMethod === "efectivo" ? parseFloat(revisionPagaCon) : null,
-        "pago.rechazo_vuelto": false, // Resetear el rechazo al enviar corrección
-        // Recalcular vuelto si es efectivo (usando total redondeado)
-        vuelto: revisionPaymentMethod === "efectivo" ? (parseFloat(revisionPagaCon) - totalRedondeado) : null,
-        historial: [
-          ...order.historial,
-          {
-            estado: "confirmada",
-            fecha: new Date(),
-            comentario: `Cliente aceptó cambios. Pago: ${revisionPaymentMethod}`
-          }
-        ]
-      });
-
-      toast.success("¡Pedido actualizado y confirmado!");
-    } catch (error) {
-      console.error("Error al confirmar revisión:", error);
-      toast.error("Ocurrió un error al actualizar el pedido");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading || authLoading) {
+  // 1. Loading
+  if (loadingData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -554,8 +103,8 @@ export default function OrderDetailPage() {
     );
   }
 
+  // 2. Error
   if (error || !order) {
-    // Determinar el mensaje según el tipo de error
     let errorMessage = "No pudimos cargar la información solicitada.";
     if (error === "Pedido no encontrado" || error === "ID de pedido no válido") {
       errorMessage = "El pedido fue eliminado.";
@@ -575,8 +124,12 @@ export default function OrderDetailPage() {
               priority
             />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">{error || "Error"}</h2>
-          <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">{errorMessage}</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+            {error || "Error"}
+          </h2>
+          <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">
+            {errorMessage}
+          </p>
           <Button
             onClick={() => router.push("/inicio")}
             className="w-full max-w-xs mx-auto rounded-full text-white h-12 text-base font-semibold bg-primary hover:bg-primary/90"
@@ -589,6 +142,7 @@ export default function OrderDetailPage() {
     );
   }
 
+  // 3. Expired
   if (isExpired) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 px-6">
@@ -602,7 +156,9 @@ export default function OrderDetailPage() {
               priority
             />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">¡Se agotó el tiempo!</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+            ¡Se agotó el tiempo!
+          </h2>
           <p className="text-gray-600 text-sm sm:text-base mb-8 leading-relaxed px-4">
             El tiempo de espera para confirmar tu pedido ha finalizado.
           </p>
@@ -617,741 +173,174 @@ export default function OrderDetailPage() {
     );
   }
 
-  const estadoConfig = ESTADO_CONFIG[order.estado];
-  const IconoEstado = estadoConfig.icon;
-  const isPaymentRejected = order.pago?.rechazo_vuelto === true;
-  const canCancelOrder = order.estado === "pendiente" || order.estado === "esperando_confirmacion" || isPaymentRejected;
-
-  // Formatear el tiempo restante
-  const formatTimeRemaining = (milliseconds: number) => {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return { minutes, seconds };
-  };
-
-  const { minutes, seconds } = timeRemaining !== null ? formatTimeRemaining(timeRemaining) : { minutes: 0, seconds: 0 };
-
-  const YapePaymentCard = ({ className = "" }: { className?: string }) => {
-    if (!((order.estado === "lista" || order.estado === "preparando") && order.pago?.metodo === "yape")) return null;
-
-    return (
-      <div className={`bg-purple-50 rounded-3xl shadow-lg border border-purple-100 p-6 flex flex-col md:flex-row items-center md:items-start md:justify-between text-center md:text-left transition-all animate-in fade-in slide-in-from-bottom-4 mb-6 ${className}`}>
-        <div className="flex-1">
-          <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-            <div className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm">
-              <Image src="/MetodoPago/Yape.png" alt="Yape" width={20} height={20} className="rounded-sm" />
-            </div>
-            <span className="font-bold text-purple-900">Pago con Yape</span>
-          </div>
-
-          <p className="text-sm font-medium text-purple-800 mb-1">Escanea para pagar a</p>
-          <p className="text-2xl font-extrabold text-[#7c0f8b] mb-4">Yanet Mam*</p>
-
-          <p className="hidden md:block text-sm text-purple-700 bg-purple-100/50 px-4 py-3 rounded-xl max-w-xs">
-            {order.estado === "lista"
-              ? "Muestra el comprobante al recoger tu pedido"
-              : "Puedes ir adelantando tu pago mientras preparamos tu pedido"}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center gap-3">
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 relative flex items-center justify-center shrink-0">
-            <QRCodeCanvas
-              id={`yape-qr-canvas-${className.includes('hidden') ? 'desktop' : 'mobile'}`}
-              value="0002010102113932969cde686e395bc6b28b0c3b05efd87a5204561153036045802PE5906YAPERO6004Lima6304BA65"
-              size={512}
-              fgColor="#7c0f8b"
-              level="H"
-              style={{ width: '160px', height: '160px' }}
-              imageSettings={{
-                src: "/MetodoPago/Yape.png",
-                height: 100,
-                width: 100,
-                excavate: true,
-              }}
-            />
-            {/* Overlay visual para consistencia estética */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm pointer-events-none">
-              <Image
-                src="/MetodoPago/Yape.png"
-                alt="Yape"
-                width={32}
-                height={32}
-                className="rounded-full object-cover"
-              />
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-purple-700 border-purple-200 hover:bg-purple-100 hover:text-purple-800 h-8 gap-2 bg-white"
-            onClick={() => {
-              const canvasId = `yape-qr-canvas-${className.includes('hidden') ? 'desktop' : 'mobile'}`;
-              const originalCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
-              if (!originalCanvas) return;
-
-              // Crear canvas temporal de alta calidad para la "Tarjeta Yape"
-              const cardCanvas = document.createElement("canvas");
-              cardCanvas.width = 600;
-              cardCanvas.height = 800;
-              const ctx = cardCanvas.getContext("2d");
-              if (!ctx) return;
-
-              // 1. Fondo
-              ctx.fillStyle = "#F3E8FF"; // Purple-50
-              ctx.fillRect(0, 0, cardCanvas.width, cardCanvas.height);
-
-              // 2. Contenedor Blanco Central
-              ctx.fillStyle = "#FFFFFF";
-              ctx.beginPath();
-              // polyfill para roundRect si no existe o usar rect simple con esquinas
-              if (ctx.roundRect) {
-                ctx.roundRect(50, 50, 500, 700, 40);
-              } else {
-                ctx.rect(50, 50, 500, 700);
-              }
-              ctx.fill();
-
-              // Sombra
-              ctx.shadowColor = "rgba(0,0,0,0.1)";
-              ctx.shadowBlur = 20;
-              ctx.fill();
-
-              // 3. Logo Yape / Texto Superior
-              ctx.shadowColor = "transparent";
-              ctx.font = "bold 32px sans-serif";
-              ctx.fillStyle = "#581c87"; // Purple-900
-              ctx.textAlign = "center";
-              ctx.fillText("Pago con Yape", cardCanvas.width / 2, 130);
-
-              // 4. Nombre Destinatario
-              ctx.font = "bold 48px sans-serif";
-              ctx.fillStyle = "#7c0f8b"; // Color Yape
-              ctx.fillText("Yanet Mam*", cardCanvas.width / 2, 200);
-
-              // 5. Dibujar QR
-              const qrSize = 400;
-              const qrX = (cardCanvas.width - qrSize) / 2;
-              const qrY = 250;
-              ctx.drawImage(originalCanvas, qrX, qrY, qrSize, qrSize);
-
-              // 6. Texto Inferior
-              ctx.font = "500 24px sans-serif";
-              ctx.fillStyle = "#6b21a8"; // Purple-800
-              ctx.fillText("Escanea para pagar", cardCanvas.width / 2, 700);
-
-              // Descargar
-              const pngUrl = cardCanvas.toDataURL("image/png");
-              const downloadLink = document.createElement("a");
-              downloadLink.href = pngUrl;
-              downloadLink.download = "Yape_YanetMam.png";
-              document.body.appendChild(downloadLink);
-              downloadLink.click();
-              document.body.removeChild(downloadLink);
-              toast.success("Tarjeta QR descargada");
-            }}
-          >
-            <Download className="size-3.5" />
-            Descargar QR
-          </Button>
-        </div>
-
-        <p className="md:hidden text-xs text-purple-700 bg-purple-100/50 px-3 py-2 rounded-lg w-full mt-4">
-          {order.estado === "lista"
-            ? "Muestra el comprobante al recoger tu pedido"
-            : "Puedes ir adelantando tu pago mientras preparamos tu pedido"}
-        </p>
-      </div>
-    );
-  };
-
+  // 4. Main Content (Orchestrator)
   return (
     <div className="min-h-screen bg-gray-50/50 pb-32 md:pb-10">
+      {/* Modales */}
       <CancelOrderModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
-        onConfirm={handleCancelOrder}
+        onConfirm={cancelOrder}
         isLoading={isCancelling}
       />
 
-      {/* Header Sticky con efecto blur */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/inicio")}
-              className="rounded-full hover:bg-gray-100 -ml-2 text-gray-600"
-              size="sm"
-            >
-              <ArrowLeft className="size-5 mr-1" />
-              <span className="hidden sm:inline">Volver</span>
-            </Button>
-
-            <Link href="/inicio" className="relative size-9 rounded-full overflow-hidden shrink-0 hover:opacity-80 transition-opacity">
-              <Image
-                src="/Logo.png"
-                alt="Bodeguita Logo"
-                fill
-                className="object-cover"
-                priority
-              />
-            </Link>
-          </div>
-
-
-
-          {/* Cronómetro Central en Navbar */}
-          {order.estado === "esperando_confirmacion" && timeRemaining !== null && timeRemaining > 0 && (
-            <div className={`
-              absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-              flex items-center gap-2 px-4 py-1.5 rounded-full border shadow-sm transition-all duration-300 z-20
-              ${timeRemaining < 60000
-                ? 'bg-red-50 border-red-200 text-red-600'
-                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'}
-            `}>
-              <Clock className={`size-3.5 sm:size-4 ${timeRemaining < 60000 ? 'animate-pulse text-red-500' : 'text-gray-400'}`} />
-              <span className="text-sm font-semibold tabular-nums tracking-wide">
-                {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-              </span>
-            </div>
-          )}
-
-          <div className="flex flex-col items-end sm:items-center">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Orden #</span>
-            <span className="text-sm font-bold text-gray-900 font-mono">{order.numeroOrden}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Layout Grid: Movil 1 col, Desktop 2 cols (con sidebar sticky) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-
-          {/* Alerta de Notificaciones Desactivadas */}
-          {user && (!user.fcmToken || Notification.permission !== 'granted') && (
-            <div className="lg:col-span-12 order-1 lg:order-0">
-              <div className=" border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-orange-500 text-white rounded-lg shrink-0">
-                    <AlertCircle className="size-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-700 text-xs sm:text-base ">Activa las notificaciones</h4>
-                    <p className="text-xs text-gray-600 text-xs sm:text-base">Para recibir actualizaciones sobre el estado de tu pedido en tiempo real.</p>
-                  </div>
-                </div>
-                <NotificationToggle variant="simple" showLabel={true} className="shrink-0 " />
-              </div>
-            </div>
-          )}
-
-          {/* COLUMNA IZQUIERDA (Productos) - Ocupa 8/12 en desktop */}
-          <div className="lg:col-span-8 space-y-6 order-2 lg:order-1">
-
-            {/* TARJETA DE PAGO YAPE (Desktop: Arriba de productos. Móvil: Se muestra en la columna derecha al inicio) */}
-            <YapePaymentCard className="hidden lg:flex" />
-
-
-
-            {/* Cabecera de Lista de Productos */}
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <ShoppingBag className="size-5 text-primary" />
-                Productos <span className="text-gray-400 text-sm font-normal">({order.items.length})</span>
-              </h3>
-            </div>
-
-            {/* Lista de Productos */}
-            <div className="space-y-4">
-              {order.items.map((item) => {
-                const isEditing = order.estado === "esperando_confirmacion";
-                // Only render items that are NOT substitutes here.
-                if (item.es_sustituto) return null;
-
-                const subs = order.items.filter(i => i.es_sustituto && i.sustituye_a === item.itemId);
-
-                return (
-                  <OrderItem
-                    key={item.itemId}
-                    item={item}
-                    order={order}
-                    orderState={order.estado}
-                    isEditing={isEditing}
-                    substitutes={subs}
-                    substituteSelections={substituteSelections}
-                    canceledItems={canceledItems}
-                    onUpdateItem={handleUpdateItem}
-                    onDelete={handleDeleteItem}
-                    onUpdateSubstituteQty={handleUpdateSubstituteQty}
-                    onToggleCancelItem={handleToggleCancelItem}
-                    onClearSubstitutes={handleClearSubstitutes}
-                    onShowCancelModal={() => setShowCancelModal(true)}
-                  />
-                );
-              })}
-
-            </div>
-
-            {/* SELECCIÓN DE PAGO (SOLO EN REVISIÓN) - COLOCADA AQUÍ PARA MOBILE/DESKTOP */}
-            {order.estado === "esperando_confirmacion" && (
-              <div className="bg-white rounded-3xl border border-orange-100 p-4 sm:p-6 shadow-sm mt-6 mb-20 lg:mb-0">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-6 flex items-center gap-2">
-                  <Wallet className="size-5 sm:size-6 text-slate-400" />
-                  ¿Cómo quieres pagar el nuevo total?
-                </h2>
-
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  {/* Opción Efectivo */}
-                  <div
-                    onClick={() => setRevisionPaymentMethod("efectivo")}
-                    className={`
-                          cursor-pointer relative p-3 sm:p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 sm:gap-3 group h-auto sm:h-32 aspect-[4/3] sm:aspect-auto
-                          ${revisionPaymentMethod === "efectivo"
-                        ? "border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-500/20"
-                        : "border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50"}
-                        `}
-                  >
-                    {revisionPaymentMethod === "efectivo" && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 text-emerald-500">
-                        <CheckCircle2 className="size-5 sm:size-6 fill-emerald-100" />
-                      </div>
-                    )}
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-100">
-                      <Image src="/MetodoPago/Efectivo.png" alt="Efectivo" width={32} height={32} className="object-contain sm:w-10 sm:h-10" />
-                    </div>
-                    <span className={`font-bold text-sm sm:text-base ${revisionPaymentMethod === "efectivo" ? "text-emerald-700" : "text-slate-600"}`}>Efectivo</span>
-                  </div>
-
-                  {/* Opción Yape */}
-                  <div
-                    onClick={() => setRevisionPaymentMethod("yape")}
-                    className={`
-                          cursor-pointer relative p-3 sm:p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 sm:gap-3 group h-auto sm:h-32 aspect-[4/3] sm:aspect-auto
-                          ${revisionPaymentMethod === "yape"
-                        ? "border-purple-500 bg-purple-50/30 ring-1 ring-purple-500/20"
-                        : "border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50"}
-                        `}
-                  >
-                    {revisionPaymentMethod === "yape" && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 text-purple-500">
-                        <CheckCircle2 className="size-5 sm:size-6 fill-purple-100" />
-                      </div>
-                    )}
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-100">
-                      <Image src="/MetodoPago/Yape.png" alt="Yape" width={32} height={32} className="object-contain rounded-lg sm:w-10 sm:h-10" />
-                    </div>
-                    <span className={`font-bold text-sm sm:text-base ${revisionPaymentMethod === "yape" ? "text-purple-700" : "text-slate-600"}`}>Yape</span>
-                  </div>
-                </div>
-
-                {/* Input Dinámico para Efectivo */}
-                <div className={`
-                      overflow-hidden transition-all duration-500 ease-in-out
-                      ${revisionPaymentMethod === "efectivo" ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}
-                    `}>
-                  <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 border border-gray-200/60 max-w-md mx-auto transition-all">
-
-                    {/* Opción Pago Completo */}
-                    <div className="mb-4 flex items-center justify-center gap-2 pb-4 border-b border-gray-200/50">
-                      <button
-                        onClick={() => {
-                          const nuevoEstado = !pagoCompletoRevision;
-                          setPagoCompletoRevision(nuevoEstado);
-                          if (nuevoEstado) {
-                            setRevisionPagaCon(calculateRevisionTotal().toFixed(2));
-                          } else {
-                            setRevisionPagaCon("");
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-sm font-medium ${pagoCompletoRevision
-                          ? "bg-emerald-100 border-emerald-200 text-emerald-800"
-                          : "bg-white border-gray-200 text-slate-600 hover:border-emerald-200"
-                          }`}
-                      >
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${pagoCompletoRevision ? "border-emerald-500 bg-emerald-500" : "border-gray-300 bg-white"
-                          }`}>
-                          {pagoCompletoRevision && <CheckCircle2 className="w-3 h-3 text-white" />}
-                        </div>
-                        Pagaré con el monto exacto
-                      </button>
-                    </div>
-
-                    {!pagoCompletoRevision && (
-                      <div className="animate-in fade-in slide-in-from-top-2">
-                        <label className="block text-center text-xs sm:text-sm font-medium text-slate-500 mb-2 sm:mb-3">
-                          ¿Con cuánto vas a pagar?
-                        </label>
-                        <div className="relative max-w-[200px] sm:max-w-[240px] mx-auto">
-                          <span className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl sm:text-2xl">S/</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={revisionPagaCon}
-                            onChange={(e) => setRevisionPagaCon(e.target.value)}
-                            className="w-full bg-white text-center pl-8 sm:pl-10 pr-4 py-3 sm:py-4 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 text-2xl sm:text-3xl font-bold text-slate-800 placeholder:text-gray-300 transition-colors shadow-sm outline-none"
-                            autoFocus={revisionPaymentMethod === "efectivo" && !pagoCompletoRevision}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {pagoCompletoRevision && (
-                      <p className="text-center text-emerald-600 font-bold text-lg animate-in fade-in">
-                        Pago Completo: S/ {calculateRevisionTotal().toFixed(2)}
-                      </p>
-                    )}
-
-                    {/* Cálculo de vuelto */}
-                    {revisionPaymentMethod === "efectivo" && !pagoCompletoRevision && revisionPagaCon && (
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center px-2 sm:px-4 animate-in fade-in slide-in-from-top-2">
-                        <span className="text-xs sm:text-sm font-medium text-slate-500">Tu vuelto será:</span>
-                        <span className={`text-base sm:text-lg font-bold ${parseFloat(revisionPagaCon) >= calculateRevisionTotal() ? "text-emerald-600" : "text-red-500"
-                          }`}>
-                          {parseFloat(revisionPagaCon) >= calculateRevisionTotal()
-                            ? `S/ ${(parseFloat(revisionPagaCon) - calculateRevisionTotal()).toFixed(2)}`
-                            : "Monto insuficiente"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            )}
-          </div>
-
-          {/* COLUMNA DERECHA (Resumen y Estado) - Ocupa 4/12 en desktop y es Sticky */}
-          <div className="lg:col-span-4 space-y-6 order-1 lg:order-2">
-            <div className="lg:sticky lg:top-24 space-y-6">
-
-              {/* TARJETA DE ESTADO (Hero) */}
-              <div className={`relative overflow-hidden rounded-3xl shadow-lg border ${estadoConfig.className} p-6 transition-all`}>
-                <div className="flex flex-col items-center text-center relative z-10">
-                  {(estadoConfig as any).heroImage ? (
-                    <div className="mb-4 relative">
-                      {/* Fondo glow para el spinner */}
-                      <div className="absolute inset-0 bg-white/40 blur-xl rounded-full transform scale-150"></div>
-                      <div className="relative">
-                        <div className={`absolute inset-0 rounded-full border-[5px] ${(estadoConfig as any).borderClass}`}></div>
-                        {/* Imagen del estado mantenida */}
-                        <div className="w-24 h-24 flex items-center justify-center bg-white/30 backdrop-blur-sm rounded-full shadow-inner p-2">
-                          <Image
-                            src={(estadoConfig as any).heroImage}
-                            alt={estadoConfig.label}
-                            width={(estadoConfig as any).heroImageWidth || 100}
-                            height={(estadoConfig as any).heroImageHeight || 100}
-                            className="object-contain"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`mb-4 p-4 rounded-full bg-white/80 backdrop-blur shadow-sm ${estadoConfig.iconColor}`}>
-                      <IconoEstado className="size-10" />
-                    </div>
-                  )}
-
-                  <h2 className="text-2xl font-bold mb-2 tracking-tight">{estadoConfig.label}</h2>
-                  <p className="text-sm opacity-90 font-medium leading-relaxed max-w-[250px]">
-                    {estadoConfig.description}
-                  </p>
-
-
-
-                  {order.estado === "lista" && (
-                    <a
-                      href="https://maps.app.goo.gl/xEYuLvHZRJKHv6MY7"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center gap-2 bg-white text-teal-700 px-4 py-2 rounded-full font-bold text-sm shadow-sm border border-teal-100 hover:bg-teal-50 hover:scale-105 transition-all"
-                    >
-                      <MapPin className="size-4" />
-                      Ver ubicación de recojo
-                    </a>
-                  )}
-
-                </div>
-              </div>
-
-
-
-              {/* YAPE CARD MOBILE: Entre Estado y Resumen */}
-              <YapePaymentCard className="lg:hidden" />
-
-              {/* TARJETA DE RESUMEN FINANCIERO */}
-              <div className="bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden">
-                <div className="p-5 space-y-4">
-                  <div className="flex items-center gap-3 text-gray-700 pb-4 border-b border-gray-100">
-                    <div className="bg-gray-100 p-2 rounded-xl">
-                      <Wallet className="size-5 text-gray-600" />
-                    </div>
-                    <span className="font-semibold">Resumen de Pago</span>
-                  </div>
-
-                  {/* Detalles de pago */}
-                  <div className="space-y-3 text-sm">
-                    {(() => {
-                      const subtotal = order.total_final || order.total_estimado;
-                      const totalRedondeado = redondearTotal(subtotal);
-                      const ajusteRedondeo = totalRedondeado - subtotal;
-                      const mostrarDesglose = subtotal > 0;
-
-                      return (
-                        <>
-                          {/* Siempre mostrar subtotal si hay un total válido, excepto en esperando_confirmacion */}
-                          {mostrarDesglose && order.estado !== "esperando_confirmacion" && (
-                            <div className="flex justify-between items-center text-gray-600">
-                              <span>Subtotal productos</span>
-                              <span className="font-medium text-gray-900">S/ {subtotal.toFixed(2)}</span>
-                            </div>
-                          )}
-
-                          {/* Mostrar redondeo si existe ajuste */}
-                          {ajusteRedondeo !== 0 && subtotal > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-slate-500">Ajuste por redondeo</span>
-                              <span className={`font-semibold ${ajusteRedondeo > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                                {ajusteRedondeo > 0 ? '+' : ''}S/ {ajusteRedondeo.toFixed(2)}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                    {order.pago?.metodo && (
-                      <div className="flex justify-between items-center text-gray-600">
-                        <span>Método</span>
-                        <span className="font-medium text-gray-900 capitalize flex items-center gap-2">
-                          {order.pago.metodo === "yape" ? (
-                            <>
-                              <Image src="/MetodoPago/Yape.png" alt="Yape" width={16} height={16} className="rounded-sm" />
-                              Yape
-                            </>
-                          ) : (
-                            "Efectivo"
-                          )}
-                        </span>
-                      </div>
-                    )}
-
-                    {order.pago?.metodo === "efectivo" && order.pago.monto_paga_con && (
-                      <>
-                        <div className="flex justify-between items-center text-gray-600">
-                          <span>Paga con</span>
-                          <span className="font-medium text-gray-900">
-                            S/ {order.pago.monto_paga_con.toFixed(2)}
-                            {(order.vuelto === 0 || order.vuelto === null || Math.abs(order.pago.monto_paga_con - (order.total_final || order.total_estimado)) < 0.05) && (
-                              <span className="ml-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">(Completo)</span>
-                            )}
-                          </span>
-                        </div>
-                        {order.vuelto && order.vuelto > 0 ? (
-                          <div className="flex justify-between items-center text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                            <span>Vuelto a recibir</span>
-                            <span className="font-bold">S/ {order.vuelto.toFixed(2)}</span>
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-
-                    {order.envases_retornables > 0 && (
-                      <div className="flex justify-between items-center text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
-                        <span className="flex items-center gap-1"><Recycle className="size-3" /> Envases</span>
-                        <span className="font-bold">{order.envases_retornables} u.</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Total Grande */}
-                  <div className="pt-4 border-t border-gray-100 mt-2">
-                    {order.estado === "esperando_confirmacion" ? (
-                      /* Mostrar solo "Total tras cambios" en tiempo real */
-                      <div className="flex justify-between items-end">
-                        <span className="text-orange-700 font-semibold text-sm mb-1">
-                          Total tras cambios
-                        </span>
-                        <span className="text-3xl font-bold text-orange-600 tracking-tight">
-                          S/ {calculateRevisionTotal().toFixed(2)}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between items-end">
-                          <span className="text-gray-500 font-medium text-sm mb-1">
-                            {order.total_final && order.total_final > 0 ? "Total" : "Total Estimado"}
-                          </span>
-                          <span className="text-3xl font-bold text-gray-900 tracking-tight">
-                            {(order.total_final === 0 && order.total_estimado === 0 && order.items.some(i => i.mostrar_precio_web === false && !i.is_recovered_price && (!i.precio_final || i.precio_final === 0)))
-                              ? <span className="text-xl text-orange-500">Por confirmar</span>
-                              : `S/ ${redondearTotal(order.total_final && order.total_final > 0 ? order.total_final : order.total_estimado).toFixed(2)}`
-                            }
-                          </span>
-                        </div>
-                        {order.requiere_confirmacion && (
-                          <p className="text-xs text-darkblue mt-2 flex items-start gap-1.5 bg-gray-100 p-2 rounded-lg border border-gray-200">
-                            <AlertCircle className="size-3.5 shrink-0 mt-0.5 text-red-500" />
-                            El precio final podría variar tras la revisión.
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-
-                {/* Botón de Confirmar Cambios (Revisión) */}
-                {order.estado === "esperando_confirmacion" && (
-                  <div className="hidden lg:block bg-gradient-to-b from-orange-50 to-white p-4 border-t border-orange-100">
-                    <Button
-                      onClick={handleAcceptRevision}
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 rounded-xl shadow-lg shadow-orange-500/20 font-bold tracking-wide transition-all active:scale-[0.98]"
-                    >
-                      <CheckCircle2 className="mr-2 size-5" />
-                      Confirmar Cambios
-                    </Button>
-                  </div>
-                )}
-
-                {/* Botón de Cancelar */}
-                {canCancelOrder && (
-                  <div className="hidden lg:block bg-gray-50 p-4 border-t border-gray-100">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowCancelModal(true)}
-                      className="w-full bg-white hover:bg-red-50 text-red-600 border-red-100 hover:border-red-200 h-11 rounded-xl shadow-sm hover:shadow transition-all"
-                    >
-                      Cancelar Pedido
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-
-
-              {/* Info de Entrega Pequeña */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
-                <div className="bg-blue-50 p-2.5 rounded-full shrink-0">
-                  <Store className="size-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Método de entrega</p>
-                  <div className="flex flex-col">
-                    <p className="text-sm font-bold text-gray-900">Recojo en Tienda</p>
-                    <a
-                      href="https://maps.app.goo.gl/xEYuLvHZRJKHv6MY7"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 font-medium mt-0.5"
-                    >
-                      <MapPin className="size-3" />
-                      Ver ubicación
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </div >
-
-      {/* BARRA INFERIOR STICKY (SOLO MÓVIL) */}
-      < div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 lg:hidden z-30 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] safe-area-pb" >
-        <div className="container mx-auto flex gap-3 items-center">
-          <div className="flex-1">
-            <p className="text-xs text-slate-500 font-medium mb-0.5">
-              {order.estado === "esperando_confirmacion" ? "Total con cambios" : "Total del Pedido"}
-            </p>
-            <p className="text-xl font-extrabold text-slate-900">
-              {(order.estado !== "esperando_confirmacion" && order.total_final === 0 && order.total_estimado === 0 && order.items.some(i => i.mostrar_precio_web === false && !i.is_recovered_price && (!i.precio_final || i.precio_final === 0)))
-                ? <span className="text-lg text-orange-500">Por confirmar</span>
-                : `S/ ${(order.estado === "esperando_confirmacion" ? calculateRevisionTotal() : redondearTotal(order.total_final || order.total_estimado)).toFixed(2)}`
-              }
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {canCancelOrder && (
-              <Button
-                variant="outline"
-                onClick={() => setShowCancelModal(true)}
-                className="px-3 sm:px-4 h-9 rounded-xl border-red-100 text-white bg-red-500 hover:bg-red-400 hover:border-red-200  shrink-0 text-sm font-medium"
-              >
-                <XCircle className="size-4 sm:size-5" />
-                <span className="ml-1">Cancelar</span>
-              </Button>
-            )}
-
-            {(order.estado === "esperando_confirmacion" || isPaymentRejected) ? (
-              <Button
-                className="flex-1 px-6 h-9 bg-orange-500 hover:bg-orange-600 text-white  rounded-xl text-sm font-bold shadow-lg shadow-orange-200"
-                onClick={handleAcceptRevision}
-                disabled={loading}
-              >
-                Confirmar
-              </Button>
-            ) : (
-              <div className={`px-4 py-2 rounded-xl font-bold text-sm text-center min-w-[120px] flex items-center justify-center gap-2 border ${estadoConfig.className.replace('bg-gradient-to-br', 'bg-white').replace('text-', 'text-')}`}>
-                <IconoEstado className="size-4" />
-                {estadoConfig.label}
-              </div>
-            )}
-          </div>
-        </div>
-      </div >
-
-      {/* Modal de Pago Rechazado */}
       <PaymentRejectedModal
         isOpen={isPaymentRejected}
-        total={Math.abs(calculateRevisionTotal() - 0.01) > 0.01 ? calculateRevisionTotal() : redondearTotal(order.total_final || order.total_estimado)}
+        total={Math.abs(calculateRevisionTotal() - 0.01) > 0.01 ? calculateRevisionTotal() : (order.total_final || order.total_estimado)}
         paymentMethod={revisionPaymentMethod}
         payAmount={revisionPagaCon}
         isFullPayment={pagoCompletoRevision}
         onMethodChange={setRevisionPaymentMethod}
         onAmountChange={setRevisionPagaCon}
         onFullPaymentToggle={setPagoCompletoRevision}
-        onConfirm={handleAcceptRevision}
+        onConfirm={acceptRevision}
         onCancelOrder={() => setShowCancelModal(true)}
-        isLoading={loading}
+        isLoading={isUpdating}
         originalPayAmount={order.pago?.monto_paga_con}
       />
 
-      {/* Modal Confirmación Eliminar Item */}
-      {
-        itemToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-all animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 scale-100 animate-in zoom-in-95 duration-200">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="bg-red-50 p-3 rounded-full">
-                  <Trash2 className="size-6 text-red-500" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-lg text-gray-900">¿Eliminar producto?</h3>
-                  <p className="text-sm text-gray-500">
-                    ¿Estás seguro de quitar <span className="font-semibold text-gray-700">{itemToDelete.nombre}</span> de este pedido?
-                  </p>
-                </div>
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-all animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="bg-red-50 p-3 rounded-full">
+                <Trash2 className="size-6 text-red-500" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-lg text-gray-900">
+                  ¿Eliminar producto?
+                </h3>
+                <p className="text-sm text-gray-500">
+                  ¿Estás seguro de quitar{" "}
+                  <span className="font-semibold text-gray-700">
+                    {itemToDelete.nombre}
+                  </span>{" "}
+                  de este pedido?
+                </p>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3 w-full mt-2">
-                  <Button variant="outline" onClick={() => setItemToDelete(null)} className="w-full h-11 rounded-xl border-gray-200 cursor-pointer">
-                    Cancelar
-                  </Button>
-                  <Button variant="destructive" onClick={handleConfirmDeleteItem} className="w-full bg-red-500 hover:bg-red-600 h-11 rounded-xl cursor-pointer">
-                    Eliminar
-                  </Button>
-                </div>
+              <div className="grid grid-cols-2 gap-3 w-full mt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setItemToDelete(null)}
+                  className="w-full h-11 rounded-xl border-gray-200 cursor-pointer"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmDelete}
+                  className="w-full bg-red-500 hover:bg-red-600 h-11 rounded-xl cursor-pointer"
+                >
+                  Eliminar
+                </Button>
               </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
+
+      {/* Header Sticky */}
+      <div className="sticky top-0 z-30 flex flex-col transition-all duration-300">
+        <OrderHeader
+          numeroOrden={order.numeroOrden}
+          timeRemaining={timeRemaining}
+          minutes={minutes}
+          seconds={seconds}
+          showTimer={order.estado === "esperando_confirmacion"}
+        />
+
+        {/* Barra de Notificaciones Móvil (Sticky) */}
+        <OrderNotificationBanner variant="mobile" />
+      </div>
+
+      {/* Barra de Notificaciones Desktop (Static) */}
+      <OrderNotificationBanner variant="desktop" />
+
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
 
-    </div >
+          {/* COLUMNA IZQUIERDA (Productos) */}
+          <div className="lg:col-span-8 space-y-6 order-2 lg:order-1">
+            {/* Tarjeta de Pago Yape (Desktop) */}
+            <YapePaymentCard
+              estado={order.estado}
+              metodoPago={order.pago?.metodo || ""}
+              className="hidden lg:flex"
+            />
+
+            {/* Lista de Productos */}
+            <OrderItemsList
+              order={order}
+              isEditing={order.estado === "esperando_confirmacion"}
+              substituteSelections={substituteSelections}
+              canceledItems={canceledItems}
+              onUpdateItem={(itemId, updates) => updateItem(itemId, updates)}
+              onDeleteItem={handleRequestDelete}
+              onUpdateSubstituteQty={updateSubstituteQty}
+              onToggleCancelItem={toggleCancelItem}
+              onClearSubstitutes={clearSubstitutes}
+              onShowCancelModal={() => setShowCancelModal(true)}
+            />
+
+            {/* Sección de Revisión de Pago */}
+            {order.estado === "esperando_confirmacion" && (
+              <OrderRevisionSection
+                revisionPaymentMethod={revisionPaymentMethod}
+                revisionPagaCon={revisionPagaCon}
+                pagoCompletoRevision={pagoCompletoRevision}
+                revisionTotal={calculateRevisionTotal()}
+                onMethodChange={setRevisionPaymentMethod}
+                onAmountChange={setRevisionPagaCon}
+                onFullPaymentToggle={setPagoCompletoRevision}
+              />
+            )}
+          </div>
+
+          {/* COLUMNA DERECHA (Resumen y Estado) */}
+          <div className="lg:col-span-4 space-y-6 order-1 lg:order-2">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              {/* Tarjeta de Estado */}
+              <OrderStatusCard order={order} />
+
+              {/* Yape Card (Mobile) */}
+              <YapePaymentCard
+                estado={order.estado}
+                metodoPago={order.pago?.metodo || ""}
+                className="lg:hidden"
+              />
+
+              {/* Resumen de Pago */}
+              <PaymentSummaryCard
+                order={order}
+                isRevision={order.estado === "esperando_confirmacion"}
+                revisionTotal={calculateRevisionTotal()}
+                canCancelOrder={canCancelOrder}
+                showConfirmButton={order.estado === "esperando_confirmacion"}
+                onConfirm={acceptRevision}
+                onCancel={() => setShowCancelModal(true)}
+                isLoading={isUpdating}
+              />
+
+              {/* Información de Entrega */}
+              <DeliveryInfoCard />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Barra Inferior (Solo Móvil) */}
+      <OrderBottomBar
+        order={order}
+        isRevision={order.estado === "esperando_confirmacion"}
+        revisionTotal={calculateRevisionTotal()}
+        canCancelOrder={canCancelOrder}
+        showConfirmButton={Boolean((order.estado === "esperando_confirmacion" || isPaymentRejected))}
+        onConfirm={acceptRevision}
+        onCancel={() => setShowCancelModal(true)}
+        isLoading={isUpdating}
+      />
+    </div>
   );
 }

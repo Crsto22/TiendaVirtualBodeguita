@@ -13,7 +13,6 @@ import { useCartStore } from "@/store/cart-store";
 import { useStoreConfigContext } from "@/context/StoreConfigContext";
 import { ProductWeightSelector } from "@/components/product/product-weight-selector";
 import { ProductNewBadge } from "@/components/product/product-new-badge";
-import { FeaturedCategories } from "@/components/inicio/featured-categories";
 
 // Función para capitalizar texto (primera letra mayúscula, resto minúscula)
 function capitalizeText(text: string): string {
@@ -410,10 +409,7 @@ export function ProductsSection({ initialData }: ProductsSectionProps) {
   const productosNuevos = data?.productosNuevos;
 
   return (
-    <>
-      <FeaturedCategories />
-
-      <section className="py-4 md:py-8 bg-gray-50">
+    <section className="py-4 md:py-8 bg-gray-50">
         <div className="container mx-auto px-4">
           {/* Productos nuevos (si existen) */}
           {productosNuevos && productosNuevos.length > 0 && (
@@ -433,6 +429,5 @@ export function ProductsSection({ initialData }: ProductsSectionProps) {
           ))}
         </div>
       </section>
-    </>
   );
 }
